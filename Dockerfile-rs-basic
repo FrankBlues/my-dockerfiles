@@ -1,0 +1,9 @@
+FROM mellemm/miniconda-centos7:v0.1
+
+# RUN conda install -c conda-forge satpy
+
+RUN conda install -c conda-forge gdal rasterio shapely fiona geopandas \
+    && conda clean --yes -t
+
+
+ENV GDAL_DATA /opt/miniconda/share/gdal
