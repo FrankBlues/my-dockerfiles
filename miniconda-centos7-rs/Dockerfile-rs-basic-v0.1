@@ -5,5 +5,9 @@ FROM mellemm/miniconda-centos7:v0.1
 RUN conda install -c conda-forge gdal rasterio shapely fiona geopandas \
     && conda clean --yes -t
 
+# Install AU-EOED software stack
+RUN conda install --yes -c conda-forge arcsi rsgislib libboost scikit-learn scikit-image matplotlib pandas statsmodels h5py ; \
+    conda clean --yes -t
+
 
 ENV GDAL_DATA /opt/miniconda/share/gdal

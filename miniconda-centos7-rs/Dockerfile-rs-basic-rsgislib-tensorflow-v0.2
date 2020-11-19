@@ -1,0 +1,15 @@
+FROM mellemm/miniconda-centos7:v0.1
+
+# RUN conda install -c conda-forge satpy
+
+RUN conda install --yes -c conda-forge python=3.8 && conda update --yes -n base conda
+# Install AU-EOED software stack
+RUN conda install --yes -c conda-forge python=3.8 arcsi rsgislib scikit-learn scikit-image scikit-optimize matplotlib h5py scipy pip tqdm parallel xgboost lightgbm statsmodels pycurl jupyterlab plotly rtree jinja2 pytables psutil sphinx elevation scikit-plot bayesian-optimization shapely numba sqlalchemy rasterio networkx seaborn tpot \
+    && conda clean --yes -t
+
+RUN pip install pandas tensorflow pyod fiona geopandas gsutil cvxopt dropbox alphashape
+# RUN conda install -c conda-forge gdal rasterio shapely fiona geopandas \
+#     && conda clean --yes -t
+
+ENV GDAL_DATA /opt/miniconda/share/gdal
+ENV PROJ_LIB=/opt/miniconda/share/proj
