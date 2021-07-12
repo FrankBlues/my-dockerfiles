@@ -1,0 +1,20 @@
+FROM mellemm/miniconda-centos7-rs:v0.1
+
+# RUN conda install -c conda-forge satpy
+
+# RUN conda install -c conda-forge gdal rasterio shapely fiona geopandas \
+#     && conda clean --yes -t
+
+# grass
+RUN curl -o grass-7.8.6dev-x86_64-pc-linux-gnu-11_07_2021.tar.gz https://grass.osgeo.org/grass78/binary/linux/snapshot/grass-7.8.6dev-x86_64-pc-linux-gnu-12_07_2021.tar.gz
+
+RUN curl -o grass-7.8.6dev-x86_64-pc-linux-gnu-11_07_2021-install.sh https://grass.osgeo.org/grass78/binary/linux/snapshot/grass-7.8.6dev-x86_64-pc-linux-gnu-12_07_2021-install.sh
+
+RUN chmod +x grass-7.8.6dev-x86_64-pc-linux-gnu-11_07_2021-install.sh
+RUN ./grass-7.8.6dev-x86_64-pc-linux-gnu-11_07_2021-install.sh grass-7.8.6dev-x86_64-pc-linux-gnu-11_07_2021.tar.gz
+
+RUN rm -f grass-7.8.6dev-x86_64-pc-linux-gnu-11_07_2021.tar.gz
+RUN rm -f grass-7.8.6dev-x86_64-pc-linux-gnu-11_07_2021-install.sh
+
+ENV GDAL_DATA /opt/miniconda/share/gdal
+ENV PROJ_LIB=/opt/miniconda/share/proj
