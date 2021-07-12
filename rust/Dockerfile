@@ -1,4 +1,4 @@
-FROM osgeo/gdal:latest
+FROM rust
 
 RUN apt-get update -y \
     && apt-get install -y build-essential \
