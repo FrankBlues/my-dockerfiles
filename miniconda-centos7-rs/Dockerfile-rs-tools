@@ -1,5 +1,5 @@
 FROM mellemm/miniconda-centos7-rs:v0.1
-
+RUN pip install pillow
 COPY ./rs_tools /opt/
 
 WORKDIR /opt/rs_tools/

@@ -1,7 +1,6 @@
-FROM mellemm/gdal-ubuntu
+FROM mellemm/gdal-ubuntu:v0.2.0
 
-RUN apt-get update -y \
-    && apt-get install -y python3-dev \
-		&& apt-get install -y python3-distutils \
-		&& apt-get install vim \
-		&& apt-get clean -y
+COPY ./config ~/.cargo/
+
+RUN cd /opencv/build && make install \
+    && apt-get install -y clang

@@ -1,0 +1,24 @@
+FROM mellemm/miniconda-centos7-rs:v0.1
+
+# Then install GDAL from EPEL
+RUN yum install -y epel-release; \
+ && yum install -y gdal gdal-python gdal-devel
+
+RUN echo '[copr:copr.fedorainfracloud.org:neteler:grass76]' > /etc/yum.repos.d/grass76.repo \
+ && echo 'name=Copr repo for grass76 owned by neteler' >> /etc/yum.repos.d/grass76.repo \
+ && echo 'baseurl=https://download.copr.fedorainfracloud.org/results/neteler/grass76/epel-7-$basearch/' >> /etc/yum.repos.d/grass76.repo \
+ && echo 'type=rpm-md' >> /etc/yum.repos.d/grass76.repo \
+ && echo 'skip_if_unavailable=True' >> /etc/yum.repos.d/grass76.repo \
+ && echo 'gpgcheck=1' >> /etc/yum.repos.d/grass76.repo \
+ && echo 'gpgkey=https://download.copr.fedorainfracloud.org/results/neteler/grass76/pubkey.gpg' >> /etc/yum.repos.d/grass76.repo \
+ && echo 'repo_gpgcheck=0' >> /etc/yum.repos.d/grass76.repo \
+ && echo 'enabled=1' >> /etc/yum.repos.d/grass76.repo \
+ && echo 'enabled_metadata=1' >> /etc/yum.repos.d/grass76.repo \
+
+RUN yum update -y /
+ && yum install -y grass grass-libs liblas #grass-gui
+
+# needed for GRASS Addons (via g.extension)
+# yum install grass-devel liblas liblas-devel
+
+RUN yum clean all

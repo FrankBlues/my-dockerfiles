@@ -1,0 +1,25 @@
+FROM osgeo/gdal:ubuntu-full-3.3.2
+
+RUN apt-get update -y \
+    && apt-get install -y build-essential \
+		&& apt-get install -y cmake \
+    && apt-get install -y language-pack-en language-pack-zh-hans \
+    && locale-gen en_US.UTF-8 \
+    && locale-gen zh_CN.UTF-8 \
+    && ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+RUN apt-get install -y python3-dev \
+		&& apt-get install -y python3-distutils \
+		&& apt-get install -y gdb \
+		&& apt-get install -y vim \
+		&& apt-get install -y pkg-config \
+		&& apt-get clean -y
+
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y # \
+    # && source $HOME/.cargo/env
+COPY ./config ~/.cargo/
+
+COPY ./gdal /gdal/gdal
+COPY ./glibc-2.31 /build/glibc
+
+ENV LANG=zh_CN.UTF-8 LANGUAGE=zh_CN:zh LC_ALL=zh_CN.UTF-8
