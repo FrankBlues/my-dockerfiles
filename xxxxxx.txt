@@ -1,0 +1,351 @@
+vmware
+ZF3R0-FHED2-M80TY-8QYGC-NPKYF  VMWARE 16.2.2
+
+172.25.138.160 master
+172.25.138.111 node1
+172.25.138.162 node2
+mask 255.255.240.0
+gate 172.25.128.1
+
+
+#yum不能用
+# vi /etc/resolv.conf
+# cd /etc/sysconfig/network-scripts/
+
+#基础安装
+yum group install "Development Tools"
+yum install -y net-tools
+# 国内yum源
+#yum install -y wget
+#mkdir /etc/yum.repos.d/bak && mv /etc/yum.repos.d/*.repo /etc/yum.repos.d/bak
+#wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.cloud.tencent.com/repo/centos7_base.repo
+#wget -O /etc/yum.repos.d/epel.repo http://mirrors.cloud.tencent.com/repo/epel-7.repo
+
+
+# ssh 按装
+yum install openssh-server
+systemctl restart  sshd  # service sshd start
+systemctl enable sshd
+# vi /etc/ssh/sshd_config
+#Port 22
+#ListenAddress
+#PermitRootLogin
+#Password..
+
+
+# 1 关闭firewalld服务
+systemctl stop firewalld
+systemctl disable firewalld
+
+
+# 2 关闭iptables服务
+systemctl stop iptables
+systemctl disable iptables
+
+
+# 编辑 /etc/selinux/config 文件，修改SELINUX的值为disabled
+# 注意修改完毕之后需要重启linux服务
+#SELINUX=disabled
+
+
+# 编辑分区配置文件/etc/fstab，注释掉swap分区一行
+# 注意修改完毕:之后需要重启linux服务
+# UUID=455cc753-7a60-4c17-a424-7741728c44a1 /boot    xfs     defaults        0 0
+# /dev/mapper/centos-home /home                      xfs     defaults        0 0
+# /dev/mapper/centos-swap swap                      swap    defaults        0 0
+
+
+# 修改linux的内核参数，添加网桥过滤和地址转发功能
+# 编辑/etc/sysctl.d/kubernetes.conf文件，添加如下配置:
+#net.bridge.bridge-nf-call-ip6tables = 1
+#net.bridge.bridge-nf-call-iptables = 1
+#net.ipv4.ip_forward = 1
+
+# 重新加载配置
+sysctl -p
+
+# 加载网桥过滤模块
+modprobe br_netfilter
+
+# 查看网桥过滤模块是否加载成功
+lsmod | grep br_netfilter
+
+# 1 安装ipset和ipvsadm
+[root@master ~]# yum install ipset ipvsadm -y
+
+# 2 添加需要加载的模块写入脚本文件
+cat <<EOF >  /etc/sysconfig/modules/ipvs.modules
+#!/bin/bash
+modprobe -- ip_vs
+modprobe -- ip_vs_rr
+modprobe -- ip_vs_wrr
+modprobe -- ip_vs_sh
+modprobe -- nf_conntrack_ipv4
+EOF
+
+# 3 为脚本文件添加执行权限
+chmod +x /etc/sysconfig/modules/ipvs.modules
+
+# 4 执行脚本文件
+/bin/bash /etc/sysconfig/modules/ipvs.modules
+
+# 5 查看对应的模块是否加载成功
+lsmod | grep -e ip_vs -e nf_conntrack_ipv4
+
+
+reboot
+
+# docker
+# 1 切换镜像源
+wget https://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo -O /etc/yum.repos.d/docker-ce.repo
+
+# 2 查看当前镜像源中支持的docker版本
+yum list docker-ce --showduplicates
+
+# 3 安装特定版本的docker-ce
+# 必须指定--setopt=obsoletes=0，否则yum会自动安装更高版本
+yum install --setopt=obsoletes=0 docker-ce-19.03.15.ce-3.el7 -y
+yum install --setopt=obsoletes=0 docker-ce-19.03.15-3.el7 -y
+
+# 4 添加一个配置文件
+# Docker在默认情况下使用的Cgroup Driver为cgroupfs，而kubernetes推荐使用systemd来代替cgroupfs
+mkdir /etc/docker
+cat <<EOF >  /etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "registry-mirrors": ["https://kn0t2bca.mirror.aliyuncs.com"]
+}
+EOF
+
+# 5 启动docker
+systemctl restart docker
+systemctl enable docker
+
+# 6 检查docker状态和版本
+docker version
+
+
+# 由于kubernetes的镜像源在国外，速度比较慢，这里切换成国内的镜像源
+# 编辑/etc/yum.repos.d/kubernetes.repo，添加下面的配置 
+[kubernetes]
+name=Kubernetes
+baseurl=http://mirrors.aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64
+enabled=1
+gpgcheck=0
+repo_gpgcheck=0
+gpgkey=http://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg
+       http://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
+
+# 安装kubeadm、kubelet和kubectl
+yum install --setopt=obsoletes=0 kubeadm-1.17.4-0 kubelet-1.17.4-0 kubectl-1.17.4-0 -y
+
+# 配置kubelet的cgroup
+# 编辑/etc/sysconfig/kubelet，添加下面的配置
+KUBELET_CGROUP_ARGS="--cgroup-driver=systemd"
+KUBE_PROXY_MODE="ipvs"
+
+# 4 设置kubelet开机自启
+systemctl enable kubelet
+
+
+# 在安装kubernetes集群之前，必须要提前准备好集群需要的镜像，所需镜像可以通过下面命令查看
+[root@master ~]# kubeadm config images list
+
+# 下载镜像
+# 此镜像在kubernetes的仓库中,由于网络原因,无法连接，下面提供了一种替代方案
+images=(
+    kube-apiserver:v1.17.17
+    kube-controller-manager:v1.17.17
+    kube-scheduler:v1.17.17
+    kube-proxy:v1.17.17
+    pause:3.1
+    etcd:3.4.3-0
+    coredns:1.6.5
+)
+
+for imageName in ${images[@]} ; do
+    docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/$imageName
+    docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/$imageName       k8s.gcr.io/$imageName
+    docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/$imageName
+done
+
+# 初始化  master
+kubeadm reset
+kubeadm config print init-defaults > kubeadm-init.yaml
+修改advertiseAddress IP
+kubeadm init --config kubeadm-init.yaml
+
+mkdir -p $HOME/.kube
+cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+chown $(id -u):$(id -g) $HOME/.kube/config
+加入 nodes
+kubeadm token create --print-join-command
+kubeadm join 172.25.138.160:6443 --token abcdef.0123456789abcdef \
+    --discovery-token-ca-cert-hash sha256:9bf9a74bb99435ec0e8fb6c961453987b033922a49a17b05456dc1c9ab10e5fd
+
+网络:
+calio:
+wget https://docs.projectcalico.org/v3.8/manifests/calico.yaml
+修改IP与kubeadm-init.yaml一致
+kubectl apply -f calico.yaml
+
+dashboard：
+wget https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.4/aio/deploy/recommended.yaml
+修改Service
+spec:
+  type: NodePort
+  ports:
+    - port: 443
+      targetPort: 8443
+      nodePort: 30012
+kubectl apply -f recommended.yaml
+
+服务状态
+kubectl get all -n kubernetes-dashboard
+访问集群30012端口
+用户
+dashboard-adminuser.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-user
+  namespace: kubernetes-dashboard
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-user
+roleRef:
+  apiGroup: rbac.authorizaion.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: admin-user
+  namespace: kubernetes-dashboard
+
+kubectl apply -f dashboard-adminuser.yaml
+
+token:
+kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep admin-user | awk '{print $1}')
+
+argo:
+
+kubectl create ns argo
+kubectl apply -n argo -f https://raw.githubusercontent.com/argoproj/argo-workflows/stable/manifests/quick-start-postgres.yaml
+或者
+kubectl apply -n argo -f https://github.com/argoproj/argo-workflows/releases/download/v3.2.8/install.yaml
+
+# 客户端  https://argoproj.github.io/argo-workflows/argo-server/#access-the-argo-workflows-ui
+# Download the binary
+curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.2.8/argo-linux-amd64.gz
+
+# Unzip
+gunzip argo-linux-amd64.gz
+
+# Make binary executable
+chmod +x argo-linux-amd64
+
+# Move binary to path
+mv ./argo-linux-amd64 /usr/local/bin/argo
+
+# Test installation
+argo version
+
+#修改为 NodePort
+kubectl edit svc argo-server -n argo
+
+kind: Service
+...
+spec:
+
+  sessionAffinity: None
+  type: NodePort
+
+
+
+存储
+nfs
+主节点
+安装
+yum install -y nfs-utils rpcbind
+mkdir /nfs
+配置
+vi /etc/exports
+输入 /nfs *(rw,async,no_root_squash)
+需要修改配置systemctl reload nfs
+启动服务
+# centos
+systemctl start rpcbind
+systemctl enable rpcbind
+systemctl enable nfs && systemctl restart nfs
+查看可用的nfs地址
+showmount -e localhost
+
+节点上
+安装
+yum install -y nfs-utils rpcbind
+挂载
+mkdir -p /nfs/data
+mount -t nfs 172.25.138.162:/nfs /nfs/data
+查看
+df -Th
+取消挂载
+umount /nfs/data
+
+
+配置account及相关权限
+rbac.yaml 改namespace
+创建NFS provisioner
+provisioner.yaml 改namespace及nfs ip及mount
+创建NFS资源的StorageClass
+storageclass.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: managed-nfs-storage
+provisioner: qgg-nfs-storage #这里的名称要和provisioner配置文件中的环境变量PROVISIONER_NAME保持一致
+parameters:
+  archiveOnDelete: "false"
+PVC
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: test-claim
+  annotations:  做为默认时可以不添加
+    volume.beta.kubernetes.io/storage-class: "managed-nfs-storage"   #与nfs-StorageClass.yaml metadata.name保持一致
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Mi
+kubectl get pvc
+kubectl delete pvc
+声明可以直接在POD上
+...
+spec:
+  entrypoint: ...
+  volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
+  - metadata:
+      name: workdir                     # name of volume claim
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi                  # Gi => 1024 * 1024 * 1024
+...
+
+测试挂载
+spec:
+  ...
+  containers:
+    ...
+    volumeMounts:
+      - name: nfs-pvc
+        mountPath: "/mnt"
+  volumes:
+    - name: nfs-pvc
+      persistentVolumeClaim:
+        claimName: test-claim  

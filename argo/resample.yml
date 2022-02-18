@@ -1,0 +1,128 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: image-resample
+  namespace: argo
+spec:
+  entrypoint: image-resample
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi
+      - name: input_raster
+        value: /nfs/img
+      - name: output_raster
+        value: /nfs/output
+      - name: res
+        value: 1e-4
+  templates:
+    - name: image-resample
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: input_raster
+          - name: output_raster
+          - name: res
+        artifacts: []
+      dag:
+        tasks:
+          - name: batch-rule
+            template: batch-rule
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_raster}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_raster}}'
+                - name: output_file
+                  value: /tmp/image_parallel.json
+                - name: suffix
+                  value: .tif
+            dependencies: []
+          - name: resample
+            template: resample
+            arguments:
+              parameters:
+                - name: input_raster
+                  value: '{{item.input_file}}'
+                - name: output_raster
+                  value: '{{item.output_file}}'
+                - name: output_res
+                  value: '{{inputs.parameters.res}}'
+                - name: resampling_method
+                  value: bilinear
+            dependencies: [batch-rule]
+            withParam: '{{tasks.batch-rule.outputs.parameters.result}}'
+    - name: batch-rule
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: suffix
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              path: /tmp/image_parallel.json
+      container:
+        image: 'mellemm/miniconda-centos7-rs:v0.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            python /opt/batch_rules/rsi_batch_rule.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --suffix={{inputs.parameters.suffix}}
+        resources:
+          limits:
+            memory: 2Gi
+            cpu: 2
+          requests:
+            memory: 2Gi
+            cpu: 2
+        volumeMounts:
+          - name: workdir
+            mountPath: /nfs
+    - name: resample
+      inputs:
+        parameters:
+          - name: input_raster
+          - name: output_raster
+          - name: output_res
+          - name: resampling_method
+      container:
+        image: 'mellemm/miniconda-centos7-rs:v0.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            python /opt/resample_cmd.py
+            --input_raster={{inputs.parameters.input_raster}}
+            --output_raster={{inputs.parameters.output_raster}}
+            --output_res={{inputs.parameters.output_res}}
+            --resampling_method={{inputs.parameters.resampling_method}}
+        resources:
+          limits:
+            memory: 2Gi
+            cpu: 2
+          requests:
+            memory: 2Gi
+            cpu: 2
+        volumeMounts:
+          - name: workdir
+            mountPath: /nfs
+  volumeClaimTemplates:                 # define volume, same syntax as k8s Pod spec
+  - metadata:
+      name: workdir                     # name of volume claim
+    spec:
+      accessModes: [ "ReadWriteMany" ]
+      resources:
+        requests:
+          storage: 4Gi
