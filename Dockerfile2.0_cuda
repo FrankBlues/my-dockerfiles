@@ -1,0 +1,55 @@
+#FROM nvidia/cuda:11.3.1-devel-centos7
+FROM nvidia/cuda:11.3.1-runtime-centos7
+
+ENV PATH /opt/miniconda/bin:$PATH
+COPY ./Miniconda3-latest-Linux-x86_64.sh /tmp/miniconda.sh
+#RUN wget -q https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh \
+RUN bash /tmp/miniconda.sh -bfp /opt/miniconda/ \
+    && rm -rf /tmp/miniconda.sh \
+    && conda install -y python=3 \
+    && conda update conda \
+    && ln -s /opt/miniconda/etc/profile.d/conda.sh /etc/profile.d/conda.sh \
+    && echo ". /opt/miniconda/etc/profile.d/conda.sh" >> ~/.bashrc \
+    && echo "conda activate base" >> ~/.bashrc
+
+RUN conda install --yes -c conda-forge numpy gdal rasterio rtree poppler \
+    && conda clean --yes -t
+
+ENV GDAL_DATA /opt/miniconda/share/gdal
+
+COPY ./tar /opt/
+COPY ./libtbb/* /usr/lib64/
+
+RUN rpm -ivh /opt/libjpeg-turbo-1.2.90-6.el7.x86_64.rpm && \
+    yum install -y gtk+-devel gtk2-devel qt.x86_64 && \
+    yum install -y libSM-1.2.2-2.el7.x86_64 --setopt=protected_multilib=false && \
+    echo "/opt/linux64/Mosaic" >> /etc/ld.so.conf && \
+    echo "/opt/linux64" >> /etc/ld.so.conf && \
+    ldconfig
+
+RUN yum -y install kde-l10n-Chinese && \
+    localedef -c -f UTF-8 -i zh_CN zh_CN.utf8
+
+RUN yum install -y libgfortran && \
+    yum install -y libmng && \
+    yum install -y epel-release && \
+    yum install -y jq && \
+    # yum install -y tbb && \
+    yum clean all
+
+RUN mkdir -p /home/XQRS/desktop/release/linux64 && \
+    cp /opt/linux64/libXQBase.so /home/XQRS/desktop/release/linux64 && \
+    cp /opt/linux64/libXQDog.so /home/XQRS/desktop/release/linux64
+
+RUN chmod -R 755 /opt/* && \
+    cp -r /opt/cmd /root/ && \
+    ln -sf /opt/linux64/* /usr/bin/ && \
+    ln -sf /opt/linux64/Mosaic/XQMosaic /usr/bin/XQMosaic && \
+    ln -sf /opt/linux64/Mosaic/XQMosaicX /usr/bin/XQMosaicX && \
+    ln -sf /opt/linux64/XQDsmRefineCmd.x /usr/bin/XQDsmRefineCmd.x
+
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/lib:/usr/lib64
+ENV LANG zh_CN.utf8
+
+USER root
+WORKDIR /opt/rsi

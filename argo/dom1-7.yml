@@ -1,0 +1,431 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: change-detection-download
+  namespace: default
+spec:
+  entrypoint: change-detection-download
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202011091504
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: fenfu_data
+        value: /mnt/cephfs/rsi/data/Test/mlm/fenfu/MAP10000.shp
+  onExit: ''
+  templates:
+    - name: change-detection-download
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: fenfu_data
+        artifacts: []
+      dag:
+        tasks:
+          - name: polygonize-gdal-0r1f
+            template: topo-1626142748347
+            key: topo-1626142748347
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: raster_file
+                  value: '{{item.input_file}}'
+                - name: out_file
+                  value: '{{item.output_file}}'
+            dependencies:
+              - rsi-batch-rule-ij8u
+            withParam: '{{tasks.rsi-batch-rule-ij8u.outputs.parameters.result}}'
+          - name: image-cut-9022
+            template: topo-1626146904074
+            key: topo-1626146904074
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: imageCut
+                - name: srcRaster
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/result/change_detection_out.tif
+                - name: dstRaster
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/fenfu/
+                - name: appName
+                  value: td_raster_cut_analysis
+                - name: vectorPolygons
+                  value: '{{inputs.parameters.fenfu_data}}'
+                - name: isWkt
+                  value: '1'
+                - name: isByFeature
+                  value: '1'
+                - name: satelliteShp
+                  value: '1'
+                - name: operatorCodeAlias
+                  value: change-detection-imagecut
+            dependencies: []
+          - name: rsi-batch-rule-ij8u
+            template: topo-1626156318876
+            key: topo-1626156318876
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: result_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/fenfu_shp/
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/fenfu/
+                - name: output_file
+                  value: /tmp/image_parallel.json
+                - name: suffix
+                  value: .shp
+            dependencies:
+              - image-cut-9022
+          - name: ogrmerge-gdal-1eld
+            template: topo-1626160396503
+            key: topo-1626160396503
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: o
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/merge/change_detection_out.shp
+                - name: in
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/fenfu_shp/*.shp
+            dependencies:
+              - polygonize-gdal-0r1f
+          - name: compress-v2el
+            template: topo-1626160614191
+            key: topo-1626160614191
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: compress
+                - name: inputFile
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/result/change_detection_out.shp
+                - name: outputFile
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/change_detection_out.zip
+                - name: operatorCodeAlias
+                  value: change-detection-compress
+            dependencies:
+              - dissolve-hesu
+          - name: dissolve-hesu
+            template: topo-1627958604402
+            key: topo-1627958604402
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: output_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/result/change_detection_out.shp
+                - name: input_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}//merge/change_detection_out.shp
+                - name: layer_name
+                  value: change_detection_out
+                - name: field
+                  value: DN
+            dependencies:
+              - ogrmerge-gdal-1eld
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1626142748347
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: raster_file
+          - name: out_file
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: >-
+          mkdir -p $(dirname
+          {{inputs.parameters.out_file}});gdal_polygonize.py
+          {{inputs.parameters.raster_file}} {{inputs.parameters.out_file}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1626146904074
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: srcRaster
+          - name: dstRaster
+          - name: appName
+          - name: vectorPolygons
+          - name: isWkt
+          - name: isByFeature
+          - name: satelliteShp
+          - name: operatorCodeAlias
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: >-
+          java -jar /opt/potato-algo-adapter.jar
+          --tenantId={{inputs.parameters.tenantId}}
+          --execCode={{inputs.parameters.execCode}}
+          --operatorCode={{inputs.parameters.operatorCode}}
+          --srcRaster={{inputs.parameters.srcRaster}}
+          --dstRaster={{inputs.parameters.dstRaster}}
+          --appName={{inputs.parameters.appName}}
+          --vectorPolygons={{inputs.parameters.vectorPolygons}}
+          --isWkt={{inputs.parameters.isWkt}}
+          --isByFeature={{inputs.parameters.isByFeature}}
+          --satelliteShp={{inputs.parameters.satelliteShp}}
+          --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+          --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+          --s3.protocol={{workflow.parameters.protocol}}
+          --s3.ak={{workflow.parameters.accesskey}}
+          --s3.sk={{workflow.parameters.secretkey}}
+          --s3.bucket={{workflow.parameters.output_bucket}}
+          --s3.endpoint={{workflow.parameters.endpoint}}
+          --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1626156318876
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: suffix
+      outputs:
+        parameters:
+          - name: result
+            valueFrom:
+              path: /tmp/image_parallel.json
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v1101'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 4Gi
+            cpu: 2
+          requests:
+            memory: 4Gi
+            cpu: 2
+        args: >-
+          python3 /opt/rsi/process/rsi_batch_rule.py
+          --result_dir={{inputs.parameters.result_dir}}
+          --input_dir={{inputs.parameters.input_dir}}
+          --output_file={{inputs.parameters.output_file}}
+          --suffix={{inputs.parameters.suffix}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1626160396503
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: o
+          - name: in
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: >-
+          mkdir -p $(dirname {{inputs.parameters.o}});ogrmerge.py -single -o
+          {{inputs.parameters.o}} {{inputs.parameters.in}} -overwrite_ds
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1626160614191
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputFile
+          - name: outputFile
+          - name: operatorCodeAlias
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-compress:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: >-
+          java -jar /opt/potato-algo-adapter.jar
+          --tenantId={{inputs.parameters.tenantId}}
+          --execCode={{inputs.parameters.execCode}}
+          --operatorCode={{inputs.parameters.operatorCode}}
+          --inputFile={{inputs.parameters.inputFile}}
+          --outputFile={{inputs.parameters.outputFile}}
+          --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+          --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+          --s3.protocol={{workflow.parameters.protocol}}
+          --s3.ak={{workflow.parameters.accesskey}}
+          --s3.sk={{workflow.parameters.secretkey}}
+          --s3.bucket={{workflow.parameters.output_bucket}}
+          --s3.endpoint={{workflow.parameters.endpoint}}
+          --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1627958604402
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: output_file
+          - name: input_file
+          - name: layer_name
+          - name: field
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-grass:v0.1.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 12
+          requests:
+            memory: 8Gi
+            cpu: 12
+        args: >-
+          mkdir -p $(dirname {{inputs.parameters.output_file}});python3
+          dissolve.py  --output_file={{inputs.parameters.output_file}}
+          --input_file={{inputs.parameters.input_file}}
+          --layer_name={{inputs.parameters.layer_name}}
+          --field={{inputs.parameters.field}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: cache
+      emptyDir:
+        medium: Memory
+        sizeLimit: 65536Mi

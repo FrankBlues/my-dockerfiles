@@ -1,0 +1,158 @@
+workflow:
+  apiVersion: argoproj.io/v1alpha1
+  kind: Workflow
+  metadata:
+    generateName: fusion-1012
+    namespace: default
+  spec:
+    entrypoint: fusion-1012
+    arguments:
+      parameters:
+        - name: ceph_path
+          value: /mnt/cephfs/rsi
+        - name: tenant_id
+          value: 1
+        - name: img_path
+          value: /mnt/cephfs/rsi/data/images_dom/10/zy301a_000967_860305_20120312
+    onExit: ''
+    templates:
+      - name: fusion-1012
+        parallelism: 150
+        inputs:
+          parameters:
+            - name: ceph_path
+            - name: tenant_id
+            - name: img_path
+          artifacts: []
+        dag:
+          tasks:
+            - name: dom-branch-e4k4
+              template: topo-1595417071558
+              key: topo-1595417071558
+              arguments:
+                parameters:
+                  - name: resultPath
+                    value: >-
+                      {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}
+                  - name: inputDir
+                    value: '{{inputs.parameters.img_path}}'
+                  - name: outFile
+                    value: /tmp/dom_parallel.json
+              dependencies: []
+            - name: fusion-j8be
+              template: topo-1595417138711
+              key: topo-1595417138711
+              arguments:
+                parameters:
+                  - name: panImageFile
+                    value: '{{item.panFile}}'
+                  - name: mssImageFile
+                    value: '{{item.mssFile}}'
+                  - name: outputImageFile
+                    value: '{{item.fusionFile}}'
+                  - name: fusionType
+                    value: '4'
+                  - name: isCreatePyd
+                    value: 'false'
+                  - name: isGreenEnhance
+                    value: 'false'
+                  - name: isSharpen
+                    value: 'true'
+                  - name: greenEnhanceCoef
+                    value: '0.1'
+                  - name: onlyRGB
+                    value: 'true'
+                  - name: adjustBand
+                    value: 'true'
+              withParam: '{{tasks.dom-branch-e4k4.outputs.parameters.result}}'
+              dependencies:
+                - dom-branch-e4k4
+        outputs:
+          parameters: []
+          artifacts: []
+      - name: delay
+        inputs:
+          parameters:
+            - name: time
+        suspend:
+          duration: '{{inputs.parameters.time}}'
+      - name: topo-1595417071558
+        inputs:
+          parameters:
+            - name: resultPath
+            - name: inputDir
+            - name: outFile
+        outputs:
+          parameters:
+            - name: result
+              valueFrom:
+                path: /tmp/dom_parallel.json
+        container:
+          image: '10.61.101.21:30002/rsi_group/rsi-parallel:v0908'
+          command:
+            - sh
+            - '-c'
+          imagePullPolicy: Always
+          args:
+            - >-
+              python /opt/dom-rule-argo.py
+              --resultPath={{inputs.parameters.resultPath}}
+              --inputDir={{inputs.parameters.inputDir}}
+              --outFile={{inputs.parameters.outFile}}
+          resources:
+            limits:
+              memory: 4Gi
+              cpu: 2
+            requests:
+              memory: 4Gi
+              cpu: 2
+          volumeMounts:
+            - name: workdir
+              mountPath: /mnt/cephfs/rsi
+      - name: topo-1595417138711
+        inputs:
+          parameters:
+            - name: panImageFile
+            - name: mssImageFile
+            - name: outputImageFile
+            - name: fusionType
+            - name: isCreatePyd
+            - name: isGreenEnhance
+            - name: isSharpen
+            - name: greenEnhanceCoef
+            - name: onlyRGB
+            - name: adjustBand
+        container:
+          image: '10.61.101.21:30002/rsi_group/rsi:v0921'
+          command:
+            - sh
+            - '-c'
+          imagePullPolicy: Always
+          args:
+            - >-
+              sh /root/cmd/XQFusion.sh
+              --panImageFile={{inputs.parameters.panImageFile}}
+              --mssImageFile={{inputs.parameters.mssImageFile}}
+              --outputImageFile={{inputs.parameters.outputImageFile}}
+              --fusionType={{inputs.parameters.fusionType}}
+              --isCreatePyd={{inputs.parameters.isCreatePyd}}
+              --isGreenEnhance={{inputs.parameters.isGreenEnhance}}
+              --isSharpen={{inputs.parameters.isSharpen}}
+              --greenEnhanceCoef={{inputs.parameters.greenEnhanceCoef}}
+              --onlyRGB={{inputs.parameters.onlyRGB}}
+              --adjustBand={{inputs.parameters.adjustBand}}
+          resources:
+            limits:
+              memory: 8Gi
+              cpu: 4
+            requests:
+              memory: 8Gi
+              cpu: 4
+          volumeMounts:
+            - name: workdir
+              mountPath: /mnt/cephfs/rsi
+    hostNetwork: true
+    volumes:
+      - name: workdir
+        hostPath:
+          path: /mnt/cephfs/rsi
