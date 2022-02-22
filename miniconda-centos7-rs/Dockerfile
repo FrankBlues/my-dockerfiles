@@ -3,3 +3,7 @@ FROM mellemm/miniconda-centos7-rs:v0.1
 COPY ./rstools /opt/
 
 WORKDIR /opt/
+
+RUN yum install -y epel-release && \
+    yum install -y jq && \
+		yum clean all

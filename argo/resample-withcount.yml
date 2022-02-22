@@ -52,15 +52,19 @@ spec:
             arguments:
               parameters:
                 - name: input_raster
-                  value: '{{item.input_file}}'
+                  value: '`cat /tmp/image_parallel.json | jq ''.[{{item}}].input_file''| sed ''s/\"//g''`'
                 - name: output_raster
-                  value: '{{item.output_file}}'
+                  value: '`cat /tmp/image_parallel.json | jq ''.[{{item}}].output_file''| sed ''s/\"//g''`'
                 - name: output_res
                   value: '{{inputs.parameters.res}}'
                 - name: resampling_method
                   value: bilinear
+              artifacts:
+                - name: items
+                  from: '{{tasks.batch-rule.outputs.artifacts.items}}'
             dependencies: [batch-rule]
-            withParam: '{{tasks.batch-rule.outputs.parameters.result}}'
+            withSequence:
+              count: '{{tasks.batch-rule.outputs.parameters.count}}'
     - name: batch-rule
       inputs:
         parameters:
@@ -69,10 +73,13 @@ spec:
           - name: output_file
           - name: suffix
       outputs:
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
         parameters:
-          - name: result
+          - name: count
             valueFrom:
-              path: /tmp/image_parallel.json
+              path: /tmp/count
       container:
         image: 'mellemm/miniconda-centos7-rs:v0.1'
         command:
@@ -81,7 +88,7 @@ spec:
         imagePullPolicy: Always
         args:
           - >-
-            ls /nfs; python /opt/batch_rules/rsi_batch_rule.py
+            python /opt/batch_rules/rsi_batch_rule.py
             --result_dir={{inputs.parameters.result_dir}}
             --input_dir={{inputs.parameters.input_dir}}
             --output_file={{inputs.parameters.output_file}}
@@ -103,6 +110,9 @@ spec:
           - name: output_raster
           - name: output_res
           - name: resampling_method
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
       container:
         image: 'mellemm/miniconda-centos7-rs:v0.1'
         command:
