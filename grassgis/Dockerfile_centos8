@@ -1,0 +1,25 @@
+FROM centos:centos8
+
+COPY ./CentOS-Linux-BaseOS.repo /etc/yum.repos.d/
+COPY ./CentOS-Linux-AppStream.repo /etc/yum.repos.d/
+RUN sed -i -e "s|mirrorlist=|#mirrorlist=|g" /etc/yum.repos.d/CentOS-*
+RUN sed -i -e "s|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g" /etc/yum.repos.d/CentOS-*
+
+COPY ./grass-libs-7.8.7-1.el8.aarch64.rpm /opt/
+COPY ./grass-7.8.7-1.el8.aarch64.rpm /opt/
+
+RUN dnf install -y epel-release
+RUN dnf --enablerepo=powertools install -y mesa-libGL mesa-libGLU \
+    geos proj libxml2 blas fftw cairo lapack libtiff \
+    libpq libICE libSM libdap libaec netcdf gdal \
+    PDAL proj-datumgrid-world \
+    python3-dateutil python3-numpy python3-wxpython4 \
+    jq langpacks-zh_CN langpacks-en glibc-all-langpacks \
+    && dnf clean all
+
+RUN rpm -ivh /opt/grass-libs-7.8.7-1.el8.aarch64.rpm \
+    && rpm -ivh /opt/grass-7.8.7-1.el8.aarch64.rpm
+
+RUN echo LANG=zh_CN.UTF-8 > /etc/locale.conf && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+RUN rm -f /opt/grass-libs-7.8.7-1.el8.aarch64.rpm /opt/grass-7.8.7-1.el8.aarch64.rpm

@@ -22,6 +22,7 @@ configuration = argo_workflows.Configuration(host="https://172.25.138.160:31511"
 configuration.verify_ssl = False
 
 manifest = IoArgoprojWorkflowV1alpha1Workflow(
+    
     metadata=ObjectMeta(generate_name='hello-world-'),
     spec=IoArgoprojWorkflowV1alpha1WorkflowSpec(
         entrypoint='whalesay',
@@ -30,6 +31,10 @@ manifest = IoArgoprojWorkflowV1alpha1Workflow(
                 name='whalesay',
                 container=Container(
                     image='docker/whalesay:latest', command=['cowsay'], args=['hello world']))]))
+out = 'd:/workflow.json'
+with open(out, 'w') as fhw:
+    fhw.write(manifest.to_str())
+
 
 # api_client = argo_workflows.ApiClient(configuration)
 # api_instance = workflow_service_api.WorkflowServiceApi(api_client=api_client)

@@ -1,0 +1,77 @@
+#FROM nvidia/cuda:11.3.1-devel-centos7
+FROM nvidia/cuda:11.3.1-runtime-centos8
+
+ENV PATH /opt/miniconda/bin:$PATH
+COPY ./Miniconda3-py37_4.11.0-Linux-aarch64.sh /tmp/miniconda.sh
+#RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-py37_4.11.0-Linux-aarch64.sh -O /tmp/miniconda.sh \
+RUN bash /tmp/miniconda.sh -bfp /opt/miniconda/ \
+    && rm -rf /tmp/miniconda.sh \
+    #&& conda install -y python=3 \
+    #&& conda update conda \
+    && ln -s /opt/miniconda/etc/profile.d/conda.sh /etc/profile.d/conda.sh \
+    && echo ". /opt/miniconda/etc/profile.d/conda.sh" >> ~/.bashrc \
+    && echo "conda activate base" >> ~/.bashrc
+
+RUN conda install --yes -c conda-forge numpy gdal rasterio rtree poppler \
+    && conda clean --yes -t
+
+ENV GDAL_DATA /opt/miniconda/share/gdal
+
+COPY ./tar /opt/
+#COPY ./libtbb/* /usr/lib64/
+
+COPY ./CentOS-Linux-BaseOS.repo /etc/yum.repos.d/
+COPY ./CentOS-Linux-AppStream.repo /etc/yum.repos.d/
+
+RUN yum install -y libjpeg-turbo && \
+    yum install -y gtk2-devel && \
+    yum install -y libSM  --setopt=protected_multilib=false && \
+    yum install -y qt5-qtbase && \
+    yum install -y qt5-qtbase-gui
+
+RUN yum install -y langpacks-zh_CN
+RUN dnf install langpacks-en glibc-all-langpacks -y
+RUN echo LANG=zh_CN.UTF-8 > /etc/locale.conf && \
+    ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+RUN yum install -y libgfortran && \
+    yum install -y libmng && \
+    yum install -y epel-release && \
+    yum install -y jq && \
+    yum install -y glut && \
+    yum install -y gcc make bison && \
+    yum clean all
+
+COPY ./libs/libGLEW-2.0.0-6.el8.aarch64.rpm /opt/libGLEW-2.0.0-6.el8.aarch64.rpm
+RUN rpm -ivh /opt/libGLEW-2.0.0-6.el8.aarch64.rpm && \
+    rm -f /opt/libGLEW-2.0.0-6.el8.aarch64.rpm
+
+RUN mkdir -p /home/XQRS/desktop/release/linux64 && \
+    cp /opt/linux64/libXQBase.so /home/XQRS/desktop/release/linux64 && \
+    cp /opt/linux64/libXQDog.so /home/XQRS/desktop/release/linux64
+
+RUN chmod -R 755 /opt/* && \
+    #cp -r /opt/cmd /root/ && \
+    ln -sf /opt/linux64/* /usr/bin/ && \
+    ln -sf /opt/linux64/Mosaic/XQMosaic /usr/bin/XQMosaic && \
+    ln -sf /opt/linux64/Mosaic/XQMosaicX /usr/bin/XQMosaicX && \
+    ln -sf /opt/linux64/XQDsmRefineCmd.x /usr/bin/XQDsmRefineCmd.x
+
+RUN echo "/opt/linux64/Mosaic" >> /etc/ld.so.conf && \
+    echo "/opt/linux64" >> /etc/ld.so.conf && \
+    ldconfig 
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/lib:/usr/lib64 
+ENV LANG zh_CN.utf8
+
+USER root
+WORKDIR /opt/rsi
+
+COPY ./libs/glibc-2.29.tar.gz /opt/
+
+RUN cd /opt/ && \
+    tar -zxf glibc-2.29.tar.gz && \
+    cd glibc-2.29 && \
+    mkdir build && cd build && \
+    ../configure --prefix=/usr --disable-profile --enable-add-ons --with-headers=/usr/include --with-binutils=/usr/bin && \
+    make -j 4 && make install && \
+    rm -rf glibc-2.29 && rm -f /opt/glibc-2.29.tar.gz
