@@ -1,0 +1,441 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: smart-mosaic-single-shp
+  namespace: default
+spec:
+  entrypoint: smart-mosaic-single-shp
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi-data
+      - name: share_path
+        value: /mnt/cifs
+      - name: tenant_id
+        value: 1
+      - name: exec_code
+        value: RSI202201010101
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: image_path
+        value: /mnt/cephfs/rsi-data/result/1/RSI202205051/DOM/dehaze
+      - name: shapefile_path
+        value: '"/mnt/cephfs/rsi-data/标准分幅/MAP25000.shp"'
+      - name: output_path
+        value: /mnt/cephfs/rsi-data/result/1/RSI202205051/DOM/mosaicx
+      - name: gsd
+        value: '0.0'
+      - name: mosaic_filename
+        value: mosaicx
+      - name: split_field_name
+        value: NewMapNo
+      - name: input_image_format
+        value: .tiff
+      - name: output_image_format
+        value: .tif
+  onExit: ''
+  templates:
+    - name: smart-mosaic-single-shp
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: tenant_id
+          - name: exec_code
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: image_path
+          - name: shapefile_path
+          - name: output_path
+          - name: gsd
+          - name: mosaic_filename
+          - name: split_field_name
+          - name: input_image_format
+          - name: output_image_format
+        artifacts: []
+      dag:
+        tasks:
+          - name: xq-batch-rule-dfjw
+            template: topo-1639638570983
+            key: topo-1639638570983
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}/'
+                - name: input_dir
+                  value: '{{inputs.parameters.image_path}}'
+                - name: output_file
+                  value: /tmp/image_parallel.json
+                - name: suffix
+                  value: .tif
+            dependencies:
+              - generate-shp-by-extent-t3qv
+          - name: xq-intersect-0zxi
+            template: topo-1640255236387
+            key: topo-1640255236387
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].input_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].intersect_file'| sed 's/\"//g'`
+                - name: input_shp_dir
+                  value: '{{inputs.parameters.output_path}}/split_shps'
+                - name: config_file
+                  value: XQIntersectCmd.xml
+                - name: exact_intersection
+                  value: 'true'
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-dfjw.outputs.artifacts.items}}'
+            dependencies:
+              - xq-batch-rule-dfjw
+            withSequence:
+              count: '{{tasks.xq-batch-rule-dfjw.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: parse-intersected-6ycc
+            template: topo-1640331784379
+            key: topo-1640331784379
+            arguments:
+              parameters:
+                - name: input_txt_dir
+                  value: '{{inputs.parameters.output_path}}/intersect/'
+                - name: output_file
+                  value: /tmp/intersected_shps.json
+                - name: output_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: count
+                  value: /tmp/count
+                - name: suffix
+                  value: '{{inputs.parameters.output_image_format}}'
+            dependencies:
+              - xq-intersect-0zxi
+          - name: xq-smart-mosaic-c953
+            template: topo-1642745101214
+            key: topo-1642745101214
+            arguments:
+              parameters:
+                - name: inputDir
+                  value: '{{inputs.parameters.image_path}}'
+                - name: outputFile
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].output_file'| sed 's/\"//g'`
+                - name: configFile
+                  value: SmartMosaic.task
+                - name: mosaicListFile
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].image_list_file'| sed 's/\"//g'`
+                - name: extentShpFile
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].shp_file'| sed 's/\"//g'`
+                - name: gsd
+                  value: '{{inputs.parameters.gsd}}'
+                - name: createPyd
+                  value: '0'
+                - name: findLine
+                  value: '1'
+                - name: extentIsEnvelope
+                  value: '1'
+                - name: resampleMethod
+                  value: '1'
+                - name: genLineOnly
+                  value: '0'
+                - name: smallOverlap
+                  value: '0'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: intellectImageMosaic
+              artifacts:
+                - name: items
+                  from: '{{tasks.parse-intersected-6ycc.outputs.artifacts.items}}'
+            dependencies:
+              - parse-intersected-6ycc
+            withSequence:
+              count: '{{tasks.parse-intersected-6ycc.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: generate-shp-by-extent-t3qv
+            template: topo-1649226609467
+            key: topo-1649226609467
+            arguments:
+              parameters:
+                - name: input_file
+                  value: '{{inputs.parameters.shapefile_path}}'
+                - name: input_path
+                  value: '{{inputs.parameters.image_path}}'
+                - name: output_path
+                  value: '{{inputs.parameters.output_path}}/split_shps'
+                - name: suffix_name
+                  value: .tiff
+                - name: frame_field
+                  value: '{{inputs.parameters.split_field_name}}'
+                - name: is_create_dir
+                  value: '0'
+                - name: thread_num
+                  value: '10'
+            dependencies: []
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1639638570983
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: suffix
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 2Gi
+            cpu: 1
+          requests:
+            memory: 2Gi
+            cpu: 1
+        args: 
+          - >-
+            python3 /opt/rsi/process/xq_batch_rule.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --suffix={{inputs.parameters.suffix}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1640255236387
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: input_shp_dir
+          - name: config_file
+          - name: exact_intersection
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/xq_intersect_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --input_shp_dir={{inputs.parameters.input_shp_dir}}
+            --config_file={{inputs.parameters.config_file}}
+            --exact_intersection={{inputs.parameters.exact_intersection}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1640331784379
+      inputs:
+        parameters:
+          - name: input_txt_dir
+          - name: output_file
+          - name: count
+          - name: output_dir
+          - name: suffix
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/intersected_shps.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 2
+          requests:
+            memory: 1Gi
+            cpu: 2
+        args: 
+          - >-
+            python /opt/rsi/process/parse_intersected.py
+            --input_txt_dir={{inputs.parameters.input_txt_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --count={{inputs.parameters.count}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --suffix={{inputs.parameters.suffix}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1642745101214
+      inputs:
+        parameters:
+          - name: inputDir
+          - name: outputFile
+          - name: configFile
+          - name: mosaicListFile
+          - name: extentShpFile
+          - name: gsd
+          - name: createPyd
+          - name: findLine
+          - name: extentIsEnvelope
+          - name: resampleMethod
+          - name: genLineOnly
+          - name: smallOverlap
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+        artifacts:
+          - name: items
+            path: /tmp/intersected_shps.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: [' java -jar /opt/potato-algo-adapter.jar --inputDir={{inputs.parameters.inputDir}} --outputFile={{inputs.parameters.outputFile}} --configFile={{inputs.parameters.configFile}} --mosaicListFile={{inputs.parameters.mosaicListFile}} --extentShpFile={{inputs.parameters.extentShpFile}} --gsd={{inputs.parameters.gsd}} --createPyd={{inputs.parameters.createPyd}} --findLine={{inputs.parameters.findLine}} --extentIsEnvelope={{inputs.parameters.extentIsEnvelope}} --resampleMethod={{inputs.parameters.resampleMethod}} --genLineOnly={{inputs.parameters.genLineOnly}} --smallOverlap={{inputs.parameters.smallOverlap}} --tenantId={{inputs.parameters.tenantId}} --execCode={{inputs.parameters.execCode}} --operatorCode={{inputs.parameters.operatorCode}} --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml --s3.protocol={{workflow.parameters.protocol}} --s3.ak={{workflow.parameters.accesskey}} --s3.sk={{workflow.parameters.secretkey}} --s3.bucket={{workflow.parameters.output_bucket}} --s3.endpoint={{workflow.parameters.endpoint}} --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}']
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1649226609467
+      inputs:
+        parameters:
+          - name: input_file
+          - name: input_path
+          - name: output_path
+          - name: suffix_name
+          - name: frame_field
+          - name: is_create_dir
+          - name: thread_num
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            ./tdgis_analysis -td --appname=td_generate_shp_by_extent
+            --input_file={{inputs.parameters.input_file}}
+            --input_path={{inputs.parameters.input_path}}
+            --output_path={{inputs.parameters.output_path}}
+            --suffix_name={{inputs.parameters.suffix_name}}
+            --frame_field={{inputs.parameters.frame_field}}
+            --is_create_dir={{inputs.parameters.is_create_dir}}
+            --thread_num={{inputs.parameters.thread_num}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi
