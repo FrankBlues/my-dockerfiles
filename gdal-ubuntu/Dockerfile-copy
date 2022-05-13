@@ -1,0 +1,6 @@
+FROM mellemm/gdal-ubuntu:v0.1.0
+
+COPY ./config ~/.cargo/
+
+RUN apt-get install -y libgsl-dev libboost-dev \
+    && apt-get clean -y
