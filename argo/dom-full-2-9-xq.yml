@@ -1,0 +1,2974 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dom-full-2-9-xq
+  namespace: default
+spec:
+  entrypoint: dom-full-2-9-xq
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi-data
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI20220713
+      - name: tenant_id
+        value: '1'
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: '2'
+      - name: env
+        value: private
+      - name: input_path
+        value: /mnt/cephfs/rsi-data/GF2_7J
+      - name: dem_path
+        value: /mnt/cephfs/rsi-data/DEM/SX.tif
+      - name: do_gcpmatch
+        value: 'true'
+      - name: dom_path
+        value: /mnt/cephfs/rsi-data/DOM/google.tif
+      - name: blk_size
+        value: '"512 512"'
+      - name: search_range
+        value: '"300 300"'
+      - name: match_method
+        value: '0'
+      - name: n_blocks_gcp
+        value: '"15 15"'
+      - name: band_index
+        value: '"0 3"'
+      - name: grid_num_x_tie
+        value: '15'
+      - name: grid_num_y_tie
+        value: '15'
+      - name: block_size_x_tie
+        value: '4096'
+      - name: block_size_y_tie
+        value: '4096'
+      - name: weak_detect_tie
+        value: 'true'
+      - name: tie_match_tasks_per_node
+        value: '5'
+      - name: adjustment_model_bundle
+        value: '1'
+      - name: is_del_tie_error_pt_bundle
+        value: 'true'
+      - name: del_tie_pt_thre_bundle
+        value: '1000,100,50,10,5,2,1'
+      - name: is_del_gcp_error_pt_bundle
+        value: 'true'
+      - name: del_gcp_pt_thre_bundle
+        value: '1000,100,50,10,5,2,1'
+      - name: base_img_weight_bundle
+        value: '0.1'
+      - name: is_set_gcp_weight_bundle
+        value: 'true'
+      - name: gcp_weight_bundle
+        value: '1.0'
+      - name: ortho_mss_gsdx
+        value: '0.0001'
+      - name: ortho_mss_gsdy
+        value: '0.0001'
+      - name: ortho_pan_gsdx
+        value: '0.00005'
+      - name: ortho_pan_gsdy
+        value: '0.00005'
+      - name: ortho_gsd_cfg
+        value: /mnt/cephfs/rsi-data/YueZiyan/ortho_gsd_config.json
+      - name: ortho_srs
+        value: >-
+          GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS
+          84",6378137,298.2572235630016,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]]
+      - name: dodging_std_file
+        value: /mnt/cephfs/rsi-data/yunse/yunse/yunse_Level_13.tif
+      - name: is_sharpen
+        value: 'true'
+      - name: smart_mosaic
+        value: 'true'
+      - name: gsd_mosaicx
+        value: '0.0'
+      - name: mosaic_result
+        value: /mnt/cephfs/rsi-data/mlm/mosaic0701.tif
+      - name: shapefile_path
+        value: '"/mnt/cephfs/rsi-data/标准分幅/MAP25000.shp"'
+      - name: split_field_name
+        value: NewMapNo
+  onExit: ''
+  templates:
+    - name: dom-full-2-9-xq
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: dem_path
+          - name: do_gcpmatch
+          - name: dom_path
+          - name: blk_size
+          - name: search_range
+          - name: match_method
+          - name: n_blocks_gcp
+          - name: band_index
+          - name: grid_num_x_tie
+          - name: grid_num_y_tie
+          - name: block_size_x_tie
+          - name: block_size_y_tie
+          - name: weak_detect_tie
+          - name: tie_match_tasks_per_node
+          - name: adjustment_model_bundle
+          - name: is_del_tie_error_pt_bundle
+          - name: del_tie_pt_thre_bundle
+          - name: is_del_gcp_error_pt_bundle
+          - name: del_gcp_pt_thre_bundle
+          - name: base_img_weight_bundle
+          - name: is_set_gcp_weight_bundle
+          - name: gcp_weight_bundle
+          - name: ortho_mss_gsdx
+          - name: ortho_mss_gsdy
+          - name: ortho_pan_gsdx
+          - name: ortho_pan_gsdy
+          - name: ortho_gsd_cfg
+          - name: ortho_srs
+          - name: dodging_std_file
+          - name: is_sharpen
+          - name: smart_mosaic
+          - name: gsd_mosaicx
+          - name: mosaic_result
+          - name: shapefile_path
+          - name: split_field_name
+        artifacts: []
+      dag:
+        tasks:
+          - name: bundle-img-rpc-6awv
+            template: topo-1636600470970
+            key: topo-1636600470970
+            arguments:
+              parameters:
+                - name: input_image_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: input_rpc_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqbundle_p/
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/kongsan_result
+                - name: image_type
+                  value: all
+            dependencies:
+              - xq-bundle-dm0q
+              - xq-bundle-f01m
+          - name: dom-rule-vc95
+            template: topo-1636610813318
+            key: topo-1636610813318
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/kongsan_result
+                - name: output_file
+                  value: /tmp/dom_parallel.json
+                - name: output_gcp_file
+                  value: /tmp/dom_gcp_parallel.json
+                - name: gsdx_mss
+                  value: '{{inputs.parameters.ortho_mss_gsdx}}'
+                - name: gsdy_mss
+                  value: '{{inputs.parameters.ortho_mss_gsdy}}'
+                - name: gsdx_pan
+                  value: '{{inputs.parameters.ortho_pan_gsdx}}'
+                - name: gsdy_pan
+                  value: '{{inputs.parameters.ortho_pan_gsdy}}'
+                - name: gsd_config
+                  value: '{{inputs.parameters.ortho_gsd_cfg}}'
+            dependencies:
+              - bundle-img-rpc-6awv
+          - name: xq-bundle-dm0q
+            template: topo-1637205120038
+            key: topo-1637205120038
+            arguments:
+              parameters:
+                - name: input_files
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqbundle_p/
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: config_file
+                  value: XQBundle.task
+                - name: is_del_tie_error_pt
+                  value: '{{inputs.parameters.is_del_tie_error_pt_bundle}}'
+                - name: del_tie_pt_thre
+                  value: '{{inputs.parameters.del_tie_pt_thre_bundle}}'
+                - name: is_del_gcp_error_pt
+                  value: '{{inputs.parameters.is_del_gcp_error_pt_bundle}}'
+                - name: del_gcp_thre
+                  value: '{{inputs.parameters.del_gcp_pt_thre_bundle}}'
+                - name: adjustment_model
+                  value: '{{inputs.parameters.adjustment_model_bundle}}'
+                - name: base_img_weight
+                  value: '{{inputs.parameters.base_img_weight_bundle}}'
+                - name: is_set_gcp_weight
+                  value: '{{inputs.parameters.is_set_gcp_weight_bundle}}'
+                - name: gcp_weight
+                  value: '{{inputs.parameters.gcp_weight_bundle}}'
+                - name: max_num_iterations
+                  value: '100'
+                - name: tie_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqtiematch_p/
+                - name: gcp_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/first_match_pan/xqgcpmatch/
+                - name: keep_rpc_header
+                  value: 'false'
+                - name: mux_as_second
+                  value: 'false'
+                - name: sensor_type
+                  value: '0'
+                - name: error_images
+                  value: None
+                - name: ctrl_images
+                  value: None
+                - name: image_type
+                  value: all_single
+            when: '{{inputs.parameters.do_gcpmatch}}==true'
+            dependencies:
+              - xq-match-task-sheet-cmd-run-mbr9
+          - name: xq-image-sharpen-lp6a
+            template: topo-1639123786127
+            key: topo-1639123786127
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].dehaze_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].sharpen_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQImageSharpenCmd.xml
+                - name: sharpen_method
+                  value: '1'
+                - name: sharpen_weight
+                  value: '0.5'
+                - name: sharpen_radius
+                  value: '3'
+                - name: sharpen_threthold
+                  value: '0'
+                - name: create_pyd
+                  value: 'false'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            when: '{{inputs.parameters.is_sharpen}}==true'
+            dependencies:
+              - xq-dehaze-1qf4
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+            continueOn:
+              error: true
+              failed: true
+          - name: xq-match-task-sheet-prepare-9njv
+            template: topo-1639563226590
+            key: topo-1639563226590
+            arguments:
+              parameters:
+                - name: input_files
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqtiematch_p/
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: config_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqtiematch_p/XQMatchTaskSheet.xml
+                - name: block_size_x
+                  value: '{{inputs.parameters.block_size_x_tie}}'
+                - name: block_size_y
+                  value: '{{inputs.parameters.block_size_y_tie}}'
+                - name: grid_num_x
+                  value: '{{inputs.parameters.grid_num_x_tie}}'
+                - name: grid_num_y
+                  value: '{{inputs.parameters.grid_num_y_tie}}'
+                - name: single_model_match
+                  value: 'false'
+                - name: grid_filter_size
+                  value: '512'
+                - name: image_type
+                  value: all_single
+                - name: ul_lat
+                  value: None
+                - name: ul_long
+                  value: None
+                - name: ur_lat
+                  value: None
+                - name: ur_long
+                  value: None
+                - name: lr_lat
+                  value: None
+                - name: lr_long
+                  value: None
+                - name: ll_lat
+                  value: None
+                - name: ll_long
+                  value: None
+                - name: tasks_per_node
+                  value: '{{inputs.parameters.tie_match_tasks_per_node}}'
+            dependencies:
+              - xq-gcp-match-ybr8
+          - name: xq-match-task-sheet-cmd-run-mbr9
+            template: topo-1639563231344
+            key: topo-1639563231344
+            arguments:
+              parameters:
+                - name: config_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqtiematch_p/XQMatchTaskSheet.xml
+                - name: from_model
+                  value: '{{item}}'
+                - name: n_models
+                  value: '1'
+                - name: max_models
+                  value: >-
+                    {{tasks.xq-match-task-sheet-prepare-9njv.outputs.parameters.n_model_txt}}
+                - name: tasks_per_node
+                  value: '{{inputs.parameters.tie_match_tasks_per_node}}'
+                - name: weak_detect
+                  value: '{{inputs.parameters.weak_detect_tie}}'
+            dependencies:
+              - xq-match-task-sheet-prepare-9njv
+            withSequence:
+              count: >-
+                {{tasks.xq-match-task-sheet-prepare-9njv.outputs.parameters.batches}}
+          - name: xq-gcp-match-ybr8
+            template: topo-1640056498852
+            key: topo-1640056498852
+            arguments:
+              parameters:
+                - name: config_file
+                  value: GcpMatch.task
+                - name: tag
+                  value: '" XQIMAGE MATCH V1"'
+                - name: block_size
+                  value: '{{inputs.parameters.blk_size}}'
+                - name: n_blocks
+                  value: '{{inputs.parameters.n_blocks_gcp}}'
+                - name: search_range
+                  value: '{{inputs.parameters.search_range}}'
+                - name: match_method
+                  value: '{{inputs.parameters.match_method}}'
+                - name: band_index
+                  value: '{{inputs.parameters.band_index}}'
+                - name: confidence
+                  value: '0.00'
+                - name: generate_imp
+                  value: 'false'
+                - name: wallis_filter
+                  value: 'true'
+                - name: imp_warp_mode
+                  value: '4'
+                - name: input_file
+                  value: >-
+                    `cat /tmp/intersected_gcp.json | jq
+                    '.[{{item}}].origin_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/intersected_gcp.json | jq
+                    '.[{{item}}].gcp_output_file'| sed 's/\"//g'`
+                - name: dem_path
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: reference_images
+                  value: >-
+                    `cat /tmp/intersected_gcp.json | jq
+                    '.[{{item}}].ref_file'| sed 's/\"//g'`
+                - name: is_gf7
+                  value: 'false'
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.parse-intersected-gcp-jawe.outputs.artifacts.items}}
+            when: '{{inputs.parameters.do_gcpmatch}}==true'
+            dependencies:
+              - parse-intersected-gcp-jawe
+            withSequence:
+              count: '{{tasks.parse-intersected-gcp-jawe.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: xq-gcpmatch-rule-9yvm
+            template: topo-1640056503256
+            key: topo-1640056503256
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/first_match_pan
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/xqks_parallel.json
+                - name: image_type
+                  value: pan
+            when: '{{inputs.parameters.do_gcpmatch}}==true'
+            dependencies: []
+          - name: xq-ortho-45ch
+            template: topo-1640065783905
+            key: topo-1640065783905
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].mss_file'|
+                    sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_mss_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQOrthoCmd.xml
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: gsd_x
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].gsdx_mss'|
+                    sed 's/\"//g'`
+                - name: gsd_y
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].gsdy_mss'|
+                    sed 's/\"//g'`
+                - name: wkt_hcs
+                  value: '{{inputs.parameters.ortho_srs}}'
+                - name: resampling_kernel
+                  value: BiLinear
+                - name: output_8bits
+                  value: 'false'
+                - name: clip_by_dem
+                  value: 'false'
+                - name: create_pyd
+                  value: 'false'
+                - name: tasks
+                  value: '4'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - dom-rule-vc95
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: xq-ortho-0y8m
+            template: topo-1640065788943
+            key: topo-1640065788943
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].pan_file'|
+                    sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_pan_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQOrthoCmd.xml
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: gsd_x
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].gsdx_pan'|
+                    sed 's/\"//g'`
+                - name: gsd_y
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].gsdy_pan'|
+                    sed 's/\"//g'`
+                - name: wkt_hcs
+                  value: '{{inputs.parameters.ortho_srs}}'
+                - name: resampling_kernel
+                  value: BiLinear
+                - name: output_8bits
+                  value: 'false'
+                - name: clip_by_dem
+                  value: 'false'
+                - name: create_pyd
+                  value: 'false'
+                - name: tasks
+                  value: '4'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - dom-rule-vc95
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: xq-fusion-aoe6
+            template: topo-1640066328615
+            key: topo-1640066328615
+            arguments:
+              parameters:
+                - name: pan_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_pan_file'| sed 's/\"//g'`
+                - name: mss_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_mss_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQFusionCmd.xml
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].fusion_file'| sed 's/\"//g'`
+                - name: fusion_type
+                  value: '4'
+                - name: green_enhance
+                  value: 'false'
+                - name: sharpen
+                  value: 'false'
+                - name: create_pyd
+                  value: 'false'
+                - name: resampling_kernel
+                  value: '1'
+                - name: green_enhance_coef
+                  value: '0.1'
+                - name: only_rgb
+                  value: 'false'
+                - name: adjust_band
+                  value: 'false'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - xq-ortho-45ch
+              - xq-ortho-0y8m
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: xq-image-outbyte-sw73
+            template: topo-1640066354958
+            key: topo-1640066354958
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].fusion_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].outbyte_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQImageOutByteCmd.xml
+                - name: min_cut_coef
+                  value: '0.25'
+                - name: max_cut_coef
+                  value: '0.25'
+                - name: create_pyd
+                  value: 'false'
+                - name: green_enhance
+                  value: 'false'
+                - name: green_enhance_coef
+                  value: '0.1'
+                - name: only_rgb
+                  value: 'true'
+                - name: adjust_band
+                  value: 'true'
+                - name: exposure_suppress
+                  value: 'false'
+                - name: adaptive_stretch
+                  value: 'false'
+                - name: tasks
+                  value: '4'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - xq-fusion-aoe6
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: xq-dodging-c2cy
+            template: topo-1640066360954
+            key: topo-1640066360954
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].outbyte_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].dodging_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQDodgingCmd.task
+                - name: processing_mode
+                  value: '0'
+                - name: is_single_color
+                  value: '0'
+                - name: single_color_coef
+                  value: '0.3'
+                - name: processing_method
+                  value: '4'
+                - name: block_size
+                  value: '512'
+                - name: std_file
+                  value: '{{inputs.parameters.dodging_std_file}}'
+                - name: use_cloud_mask
+                  value: '0'
+                - name: cloud_mask_file
+                  value: ''
+                - name: create_pyd
+                  value: '0'
+                - name: diff_limit
+                  value: '0'
+                - name: diff_limit_coef
+                  value: '0'
+                - name: var_diff_limit_coef
+                  value: '0.8'
+                - name: stretch
+                  value: '0'
+                - name: min_coef
+                  value: '0.25'
+                - name: max_coef
+                  value: '0.25'
+                - name: expose_control
+                  value: '0'
+                - name: adjust_brightness
+                  value: '0'
+                - name: brightness_coef
+                  value: '0.01'
+                - name: adjust_contrast
+                  value: '0'
+                - name: contrast_coef
+                  value: '0.05'
+                - name: task
+                  value: '4'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - xq-image-outbyte-sw73
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: xq-dehaze-1qf4
+            template: topo-1640066372447
+            key: topo-1640066372447
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].dodging_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].dehaze_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQDeHazeCmd.xml
+                - name: self_adjust
+                  value: 'true'
+                - name: n_block_size
+                  value: '10'
+                - name: n_guide_block_size
+                  value: '40'
+                - name: n_max_atom
+                  value: '240'
+                - name: d_epsilon
+                  value: '0.001'
+                - name: d_sky
+                  value: '25'
+                - name: d_omega
+                  value: '0.95'
+                - name: dehaze_method
+                  value: '0'
+                - name: b_clahe
+                  value: 'false'
+                - name: d_cut_limit
+                  value: '1'
+                - name: all_band_clahe
+                  value: '0'
+                - name: expose_control
+                  value: '0'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - xq-dodging-c2cy
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: xq-intersect-obj-7l0u
+            template: topo-1640081354082
+            key: topo-1640081354082
+            arguments:
+              parameters:
+                - name: input_files
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/tie_coordinate_pan.txt
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: config_file
+                  value: XQIntersectObjCmd.task
+                - name: tie_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqtiematch_p/merge/bundle.tie
+                - name: sensor_type
+                  value: '0'
+                - name: image_type
+                  value: all_single
+            dependencies:
+              - xq-bundle-dm0q
+              - xq-bundle-f01m
+          - name: xq-batch-rule-l9yl
+            template: topo-1641275745491
+            key: topo-1641275745491
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/mosaicx
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/dehaze
+                - name: output_file
+                  value: /tmp/image_parallel.json
+                - name: suffix
+                  value: .tif
+            when: >-
+              {{inputs.parameters.is_sharpen}}==false &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - generate-shp-by-extent-rhxp
+          - name: xq-intersect-19zt
+            template: topo-1641275762908
+            key: topo-1641275762908
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].input_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].intersect_file'| sed 's/\"//g'`
+                - name: input_shp_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/split_shps
+                - name: config_file
+                  value: XQIntersectCmd.xml
+                - name: exact_intersection
+                  value: 'true'
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-l9yl.outputs.artifacts.items}}'
+            when: >-
+              {{inputs.parameters.is_sharpen}}==false &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - xq-batch-rule-l9yl
+            withSequence:
+              count: '{{tasks.xq-batch-rule-l9yl.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: xq-batch-rule-pdpa
+            template: topo-1641275846919
+            key: topo-1641275846919
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/mosaicx
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/sharpen
+                - name: output_file
+                  value: /tmp/image_parallel.json
+                - name: suffix
+                  value: .tif
+            when: >-
+              {{inputs.parameters.is_sharpen}}==true &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - xq-image-sharpen-lp6a
+              - generate-shp-by-extent-z91u
+          - name: xq-intersect-chm3
+            template: topo-1641275861893
+            key: topo-1641275861893
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].input_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].intersect_file'| sed 's/\"//g'`
+                - name: input_shp_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/split_shps
+                - name: config_file
+                  value: XQIntersectCmd.xml
+                - name: exact_intersection
+                  value: 'true'
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-pdpa.outputs.artifacts.items}}'
+            when: >-
+              {{inputs.parameters.is_sharpen}}==true &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - xq-batch-rule-pdpa
+            withSequence:
+              count: '{{tasks.xq-batch-rule-pdpa.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: parse-intersected-a3yr
+            template: topo-1641275867119
+            key: topo-1641275867119
+            arguments:
+              parameters:
+                - name: input_txt_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/mosaicx/intersect
+                - name: output_file
+                  value: /tmp/intersected_shps.json
+                - name: count
+                  value: /tmp/count
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/mosaicx
+            when: >-
+              {{inputs.parameters.is_sharpen}}==false &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - xq-intersect-19zt
+          - name: parse-intersected-465d
+            template: topo-1641361144850
+            key: topo-1641361144850
+            arguments:
+              parameters:
+                - name: input_txt_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/mosaicx/intersect
+                - name: output_file
+                  value: /tmp/intersected_shps.json
+                - name: count
+                  value: /tmp/count
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/mosaicx
+            when: >-
+              {{inputs.parameters.is_sharpen}}==true &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - xq-intersect-chm3
+          - name: xq-bundle-f01m
+            template: topo-1641458668845
+            key: topo-1641458668845
+            arguments:
+              parameters:
+                - name: input_files
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqbundle_p/
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: config_file
+                  value: XQBundle.task
+                - name: is_del_tie_error_pt
+                  value: '{{inputs.parameters.is_del_tie_error_pt_bundle}}'
+                - name: del_tie_pt_thre
+                  value: '{{inputs.parameters.del_tie_pt_thre_bundle}}'
+                - name: is_del_gcp_error_pt
+                  value: '{{inputs.parameters.is_del_gcp_error_pt_bundle}}'
+                - name: del_gcp_thre
+                  value: '{{inputs.parameters.del_gcp_pt_thre_bundle}}'
+                - name: adjustment_model
+                  value: '{{inputs.parameters.adjustment_model_bundle}}'
+                - name: base_img_weight
+                  value: '{{inputs.parameters.base_img_weight_bundle}}'
+                - name: is_set_gcp_weight
+                  value: '{{inputs.parameters.is_set_gcp_weight_bundle}}'
+                - name: gcp_weight
+                  value: '{{inputs.parameters.gcp_weight_bundle}}'
+                - name: max_num_iterations
+                  value: '100'
+                - name: tie_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqtiematch_p/
+                - name: gcp_file
+                  value: 'NULL'
+                - name: keep_rpc_header
+                  value: 'false'
+                - name: mux_as_second
+                  value: 'false'
+                - name: sensor_type
+                  value: '0'
+                - name: error_images
+                  value: None
+                - name: ctrl_images
+                  value: None
+                - name: image_type
+                  value: all_single
+            when: '{{inputs.parameters.do_gcpmatch}}==false'
+            dependencies:
+              - xq-match-task-sheet-cmd-run-mbr9
+          - name: xq-smart-mosaic1-7ccn
+            template: topo-1644482071785
+            key: topo-1644482071785
+            arguments:
+              parameters:
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/dehaze
+                - name: output_file
+                  value: '{{inputs.parameters.mosaic_result}}'
+                - name: config_file
+                  value: SmartMosaic.task
+                - name: mosaic_list_file
+                  value: file_list.txt
+                - name: extent_shp_file
+                  value: 'NULL'
+                - name: gsd
+                  value: '{{inputs.parameters.gsd_mosaicx}}'
+                - name: create_pyd
+                  value: '0'
+                - name: find_line
+                  value: '1'
+                - name: extent_is_envelope
+                  value: '1'
+                - name: resample_method
+                  value: '1'
+                - name: gen_line_only
+                  value: '0'
+                - name: small_overlap
+                  value: '0'
+            when: >-
+              {{inputs.parameters.is_sharpen}}==false &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}==NULL
+            dependencies:
+              - xq-dehaze-1qf4
+          - name: xq-smart-mosaic1-v8te
+            template: topo-1644482414173
+            key: topo-1644482414173
+            arguments:
+              parameters:
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/sharpen
+                - name: output_file
+                  value: '{{inputs.parameters.mosaic_result}}'
+                - name: config_file
+                  value: SmartMosaic.task
+                - name: mosaic_list_file
+                  value: file_list.txt
+                - name: extent_shp_file
+                  value: 'NULL'
+                - name: gsd
+                  value: '{{inputs.parameters.gsd_mosaicx}}'
+                - name: create_pyd
+                  value: '0'
+                - name: find_line
+                  value: '1'
+                - name: extent_is_envelope
+                  value: '1'
+                - name: resample_method
+                  value: '1'
+                - name: gen_line_only
+                  value: '0'
+                - name: small_overlap
+                  value: '0'
+            when: >-
+              {{inputs.parameters.is_sharpen}}==true &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}==NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - xq-image-sharpen-lp6a
+          - name: xq-intersect-copy1-7q60
+            template: topo-1649817940753
+            key: topo-1649817940753
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].input_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].intersect_txt'| sed 's/\"//g'`
+                - name: input_shp_dir
+                  value: '{{inputs.parameters.dom_path}}'
+                - name: config_file
+                  value: XQIntersectCmd.xml
+                - name: exact_intersection
+                  value: 'true'
+                - name: is_image_dir
+                  value: 'true'
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-gcpmatch-rule-9yvm.outputs.artifacts.items}}'
+            when: '{{inputs.parameters.do_gcpmatch}}==true'
+            dependencies:
+              - xq-gcpmatch-rule-9yvm
+            withSequence:
+              count: '{{tasks.xq-gcpmatch-rule-9yvm.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: parse-intersected-gcp-jawe
+            template: topo-1649817947480
+            key: topo-1649817947480
+            arguments:
+              parameters:
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/intersected_gcp.json
+                - name: image_type
+                  value: pan
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/first_match_pan
+            when: '{{inputs.parameters.do_gcpmatch}}==true'
+            dependencies:
+              - xq-intersect-copy1-7q60
+          - name: generate-shp-by-extent-rhxp
+            template: topo-1651109650078
+            key: topo-1651109650078
+            arguments:
+              parameters:
+                - name: input_file
+                  value: '{{inputs.parameters.shapefile_path}}'
+                - name: input_path
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/dehaze
+                - name: output_path
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/split_shps
+                - name: suffix_name
+                  value: .tiff
+                - name: frame_field
+                  value: '{{inputs.parameters.split_field_name}}'
+                - name: is_create_dir
+                  value: '0'
+                - name: thread_num
+                  value: '10'
+            when: >-
+              {{inputs.parameters.is_sharpen}}==false &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+          - name: generate-shp-by-extent-z91u
+            template: topo-1651110949493
+            key: topo-1651110949493
+            arguments:
+              parameters:
+                - name: input_file
+                  value: '{{inputs.parameters.shapefile_path}}'
+                - name: input_path
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/sharpen
+                - name: output_path
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/split_shps
+                - name: suffix_name
+                  value: .tiff
+                - name: frame_field
+                  value: '{{inputs.parameters.split_field_name}}'
+                - name: is_create_dir
+                  value: '0'
+                - name: thread_num
+                  value: '10'
+            when: >-
+              {{inputs.parameters.is_sharpen}}==true &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - xq-image-sharpen-lp6a
+          - name: xq-smart-mosaic-crop-kph3
+            template: topo-1655948470620
+            key: topo-1655948470620
+            arguments:
+              parameters:
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/dehaze
+                - name: output_mosaic_file
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].mosaic_temp_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: SmartMosaic.task
+                - name: mosaic_list_file
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].image_list_file'| sed 's/\"//g'`
+                - name: extent_shp_file
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].shp_file'| sed 's/\"//g'`
+                - name: gsd
+                  value: '{{inputs.parameters.gsd_mosaicx}}'
+                - name: create_pyd
+                  value: '0'
+                - name: find_line
+                  value: '1'
+                - name: extent_is_envelope
+                  value: '1'
+                - name: resample_method
+                  value: '1'
+                - name: gen_line_only
+                  value: '0'
+                - name: small_overlap
+                  value: '0'
+                - name: output_crop_dir
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].output_dir'| sed 's/\"//g'`
+                - name: output_format
+                  value: '0'
+              artifacts:
+                - name: items
+                  from: '{{tasks.parse-intersected-a3yr.outputs.artifacts.items}}'
+            when: >-
+              {{inputs.parameters.is_sharpen}}==false &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - parse-intersected-a3yr
+            withSequence:
+              count: '{{tasks.parse-intersected-a3yr.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: xq-smart-mosaic-crop-lp01
+            template: topo-1655948490334
+            key: topo-1655948490334
+            arguments:
+              parameters:
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/sharpen
+                - name: output_mosaic_file
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].mosaic_temp_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: SmartMosaic.task
+                - name: mosaic_list_file
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].image_list_file'| sed 's/\"//g'`
+                - name: extent_shp_file
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].shp_file'| sed 's/\"//g'`
+                - name: gsd
+                  value: '{{inputs.parameters.gsd_mosaicx}}'
+                - name: create_pyd
+                  value: '0'
+                - name: find_line
+                  value: '1'
+                - name: extent_is_envelope
+                  value: '1'
+                - name: resample_method
+                  value: '1'
+                - name: gen_line_only
+                  value: '0'
+                - name: small_overlap
+                  value: '0'
+                - name: output_crop_dir
+                  value: >-
+                    `cat /tmp/intersected_shps.json | jq
+                    '.[{{item}}].output_dir'| sed 's/\"//g'`
+                - name: output_format
+                  value: '0'
+              artifacts:
+                - name: items
+                  from: '{{tasks.parse-intersected-465d.outputs.artifacts.items}}'
+            when: >-
+              {{inputs.parameters.is_sharpen}}==true &&
+              {{inputs.parameters.smart_mosaic}}==true &&
+              {{inputs.parameters.shapefile_path}}!=NULL
+            dependencies:
+              - xq-dehaze-1qf4
+              - parse-intersected-465d
+            withSequence:
+              count: '{{tasks.parse-intersected-465d.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: xq-mosaic-662k
+            template: topo-1655965353518
+            key: topo-1655965353518
+            arguments:
+              parameters:
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/dehaze
+                - name: mosaic_list_file
+                  value: file_list.txt
+                - name: output_file
+                  value: '{{inputs.parameters.mosaic_result}}'
+                - name: create_pyd
+                  value: '0'
+            when: >-
+              {{inputs.parameters.smart_mosaic}}==false &&
+              {{inputs.parameters.is_sharpen}}==false
+            dependencies:
+              - xq-dehaze-1qf4
+          - name: xq-mosaic-s9s9
+            template: topo-1655965867463
+            key: topo-1655965867463
+            arguments:
+              parameters:
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/DOM/sharpen
+                - name: mosaic_list_file
+                  value: file_list.txt
+                - name: output_file
+                  value: '{{inputs.parameters.mosaic_result}}'
+                - name: create_pyd
+                  value: '0'
+            when: >-
+              {{inputs.parameters.smart_mosaic}}==false &&
+              {{inputs.parameters.is_sharpen}}==true
+            dependencies:
+              - xq-dehaze-1qf4
+              - xq-image-sharpen-lp6a
+          - name: xq-bundle-v2-klz7
+            template: topo-1656572166262
+            key: topo-1656572166262
+            arguments:
+              parameters:
+                - name: input_files
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqbundle_m/
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: config_file
+                  value: XQBundle.task
+                - name: is_del_tie_error_pt
+                  value: '{{inputs.parameters.is_del_tie_error_pt_bundle}}'
+                - name: del_tie_pt_thre
+                  value: '{{inputs.parameters.del_tie_pt_thre_bundle}}'
+                - name: is_del_gcp_error_pt
+                  value: '{{inputs.parameters.is_del_gcp_error_pt_bundle}}'
+                - name: del_gcp_thre
+                  value: '{{inputs.parameters.del_gcp_pt_thre_bundle}}'
+                - name: adjustment_model
+                  value: '{{inputs.parameters.adjustment_model_bundle}}'
+                - name: base_img_weight
+                  value: '{{inputs.parameters.base_img_weight_bundle}}'
+                - name: is_set_gcp_weight
+                  value: '{{inputs.parameters.is_set_gcp_weight_bundle}}'
+                - name: gcp_weight
+                  value: '{{inputs.parameters.gcp_weight_bundle}}'
+                - name: tie_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqtiematch_p/
+                - name: gcp_file
+                  value: 'NULL'
+                - name: sensor_type
+                  value: '0'
+                - name: error_images
+                  value: None
+                - name: ctrl_images
+                  value: None
+                - name: image_type
+                  value: mss
+                - name: max_num_iterations
+                  value: '100'
+                - name: keep_rpc_header
+                  value: 'false'
+                - name: mux_as_second
+                  value: 'false'
+            when: 1>=2
+            dependencies: []
+          - name: bundle-img-rpc-xq-5n6c
+            template: topo-1656582319501
+            key: topo-1656582319501
+            arguments:
+              parameters:
+                - name: input_image_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: input_rpc_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqbundle_m/
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/kongsan_result
+                - name: image_type
+                  value: mss
+            when: 1>=2
+            dependencies: []
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1636600470970
+      inputs:
+        parameters:
+          - name: input_image_dir
+          - name: input_rpc_dir
+          - name: output_dir
+          - name: image_type
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/process/bundle_img_rpc_xq.py
+            --input_image_dir={{inputs.parameters.input_image_dir}}
+            --input_rpc_dir={{inputs.parameters.input_rpc_dir}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --image_type={{inputs.parameters.image_type}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1636610813318
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: output_gcp_file
+          - name: gsdx_mss
+          - name: gsdy_mss
+          - name: gsdx_pan
+          - name: gsdy_pan
+          - name: gsd_config
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/process/dom_rule_multi_source_cfg.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --output_gcp_file={{inputs.parameters.output_gcp_file}}
+            --gsdx_mss={{inputs.parameters.gsdx_mss}}
+            --gsdy_mss={{inputs.parameters.gsdy_mss}}
+            --gsdx_pan={{inputs.parameters.gsdx_pan}}
+            --gsdy_pan={{inputs.parameters.gsdy_pan}}
+            --gsd_config={{inputs.parameters.gsd_config}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1637205120038
+      inputs:
+        parameters:
+          - name: input_files
+          - name: output_dir
+          - name: dem_file
+          - name: config_file
+          - name: is_del_tie_error_pt
+          - name: del_tie_pt_thre
+          - name: is_del_gcp_error_pt
+          - name: del_gcp_thre
+          - name: adjustment_model
+          - name: base_img_weight
+          - name: is_set_gcp_weight
+          - name: gcp_weight
+          - name: max_num_iterations
+          - name: tie_file
+          - name: gcp_file
+          - name: keep_rpc_header
+          - name: mux_as_second
+          - name: sensor_type
+          - name: error_images
+          - name: ctrl_images
+          - name: image_type
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 8
+          requests:
+            memory: 8Gi
+            cpu: 8
+        args:
+          - >-
+            cd /opt/linux64; python3 /opt/rsi/xq_bundle_cmd_v2.py
+            --input_files={{inputs.parameters.input_files}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --is_del_tie_error_pt={{inputs.parameters.is_del_tie_error_pt}}
+            --del_tie_pt_thre={{inputs.parameters.del_tie_pt_thre}}
+            --is_del_gcp_error_pt={{inputs.parameters.is_del_gcp_error_pt}}
+            --del_gcp_thre={{inputs.parameters.del_gcp_thre}}
+            --adjustment_model={{inputs.parameters.adjustment_model}}
+            --base_img_weight={{inputs.parameters.base_img_weight}}
+            --is_set_gcp_weight={{inputs.parameters.is_set_gcp_weight}}
+            --gcp_weight={{inputs.parameters.gcp_weight}}
+            --max_num_iterations={{inputs.parameters.max_num_iterations}}
+            --tie_file={{inputs.parameters.tie_file}}
+            --gcp_file={{inputs.parameters.gcp_file}}
+            --keep_rpc_header={{inputs.parameters.keep_rpc_header}}
+            --mux_as_second={{inputs.parameters.mux_as_second}}
+            --sensor_type={{inputs.parameters.sensor_type}}
+            --error_images={{inputs.parameters.error_images}}
+            --ctrl_images={{inputs.parameters.ctrl_images}}
+            --image_type={{inputs.parameters.image_type}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1639123786127
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: sharpen_method
+          - name: sharpen_weight
+          - name: sharpen_radius
+          - name: sharpen_threthold
+          - name: create_pyd
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_image_sharpen_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --sharpen_method={{inputs.parameters.sharpen_method}}
+            --sharpen_weight={{inputs.parameters.sharpen_weight}}
+            --sharpen_radius={{inputs.parameters.sharpen_radius}}
+            --sharpen_threthold={{inputs.parameters.sharpen_threthold}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1639563226590
+      inputs:
+        parameters:
+          - name: input_files
+          - name: output_dir
+          - name: dem_file
+          - name: config_file
+          - name: block_size_x
+          - name: block_size_y
+          - name: grid_num_x
+          - name: grid_num_y
+          - name: single_model_match
+          - name: grid_filter_size
+          - name: image_type
+          - name: ul_lat
+          - name: ul_long
+          - name: ur_lat
+          - name: ur_long
+          - name: lr_lat
+          - name: lr_long
+          - name: ll_lat
+          - name: ll_long
+          - name: tasks_per_node
+      outputs:
+        parameters:
+          - name: n_model_txt
+            valueFrom:
+              path: /tmp/n_models.txt
+          - name: batches
+            valueFrom:
+              path: /tmp/batches.txt
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_match_task_sheet_cmd_v2_prepare.py
+            --input_files={{inputs.parameters.input_files}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --block_size_x={{inputs.parameters.block_size_x}}
+            --block_size_y={{inputs.parameters.block_size_y}}
+            --grid_num_x={{inputs.parameters.grid_num_x}}
+            --grid_num_y={{inputs.parameters.grid_num_y}}
+            --single_model_match={{inputs.parameters.single_model_match}}
+            --grid_filter_size={{inputs.parameters.grid_filter_size}}
+            --image_type={{inputs.parameters.image_type}}
+            --ul_lat={{inputs.parameters.ul_lat}}
+            --ul_long={{inputs.parameters.ul_long}}
+            --ur_lat={{inputs.parameters.ur_lat}}
+            --ur_long={{inputs.parameters.ur_long}}
+            --lr_lat={{inputs.parameters.lr_lat}}
+            --lr_long={{inputs.parameters.lr_long}}
+            --ll_lat={{inputs.parameters.ll_lat}}
+            --ll_long={{inputs.parameters.ll_long}}
+            --tasks_per_node={{inputs.parameters.tasks_per_node}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1639563231344
+      inputs:
+        parameters:
+          - name: config_file
+          - name: from_model
+          - name: n_models
+          - name: max_models
+          - name: tasks_per_node
+          - name: weak_detect
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+            nvidia.com/gpu: 1
+          requests:
+            memory: 16Gi
+            cpu: 8
+            nvidia.com/gpu: 1
+        args:
+          - >-
+            python /opt/rsi/xq_match_task_sheet_cmd_v2_run.py
+            --config_file={{inputs.parameters.config_file}}
+            --from_model={{inputs.parameters.from_model}}
+            --n_models={{inputs.parameters.n_models}}
+            --max_models={{inputs.parameters.max_models}}
+            --tasks_per_node={{inputs.parameters.tasks_per_node}}
+            --weak_detect={{inputs.parameters.weak_detect}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640056498852
+      inputs:
+        parameters:
+          - name: config_file
+          - name: tag
+          - name: block_size
+          - name: n_blocks
+          - name: search_range
+          - name: match_method
+          - name: band_index
+          - name: confidence
+          - name: generate_imp
+          - name: wallis_filter
+          - name: imp_warp_mode
+          - name: input_file
+          - name: output_file
+          - name: dem_path
+          - name: reference_images
+          - name: is_gf7
+        artifacts:
+          - name: items
+            path: /tmp/intersected_gcp.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args:
+          - >-
+            python3 /opt/rsi/xq_gcp_match_cmd2.py
+            --config_file={{inputs.parameters.config_file}}
+            --tag={{inputs.parameters.tag}}
+            --block_size={{inputs.parameters.block_size}}
+            --n_blocks={{inputs.parameters.n_blocks}}
+            --search_range={{inputs.parameters.search_range}}
+            --match_method={{inputs.parameters.match_method}}
+            --band_index={{inputs.parameters.band_index}}
+            --confidence={{inputs.parameters.confidence}}
+            --generate_imp={{inputs.parameters.generate_imp}}
+            --wallis_filter={{inputs.parameters.wallis_filter}}
+            --imp_warp_mode={{inputs.parameters.imp_warp_mode}}
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --dem_path={{inputs.parameters.dem_path}}
+            --reference_images={{inputs.parameters.reference_images}}
+            --is_gf7={{inputs.parameters.is_gf7}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640056503256
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: image_type
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/xqks_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python /opt/rsi/process/xq_gcpmatch_rule.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --image_type={{inputs.parameters.image_type}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640065783905
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: dem_file
+          - name: gsd_x
+          - name: gsd_y
+          - name: wkt_hcs
+          - name: resampling_kernel
+          - name: output_8bits
+          - name: clip_by_dem
+          - name: create_pyd
+          - name: tasks
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_ortho_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --gsd_x={{inputs.parameters.gsd_x}}
+            --gsd_y={{inputs.parameters.gsd_y}}
+            --wkt_hcs={{inputs.parameters.wkt_hcs}}
+            --resampling_kernel={{inputs.parameters.resampling_kernel}}
+            --output_8bits={{inputs.parameters.output_8bits}}
+            --clip_by_dem={{inputs.parameters.clip_by_dem}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --tasks={{inputs.parameters.tasks}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640065788943
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: dem_file
+          - name: gsd_x
+          - name: gsd_y
+          - name: wkt_hcs
+          - name: resampling_kernel
+          - name: output_8bits
+          - name: clip_by_dem
+          - name: create_pyd
+          - name: tasks
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_ortho_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --gsd_x={{inputs.parameters.gsd_x}}
+            --gsd_y={{inputs.parameters.gsd_y}}
+            --wkt_hcs={{inputs.parameters.wkt_hcs}}
+            --resampling_kernel={{inputs.parameters.resampling_kernel}}
+            --output_8bits={{inputs.parameters.output_8bits}}
+            --clip_by_dem={{inputs.parameters.clip_by_dem}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --tasks={{inputs.parameters.tasks}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640066328615
+      inputs:
+        parameters:
+          - name: pan_file
+          - name: mss_file
+          - name: config_file
+          - name: output_file
+          - name: fusion_type
+          - name: green_enhance
+          - name: sharpen
+          - name: create_pyd
+          - name: resampling_kernel
+          - name: green_enhance_coef
+          - name: only_rgb
+          - name: adjust_band
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_fusion_cmd.py
+            --pan_file={{inputs.parameters.pan_file}}
+            --mss_file={{inputs.parameters.mss_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --fusion_type={{inputs.parameters.fusion_type}}
+            --green_enhance={{inputs.parameters.green_enhance}}
+            --sharpen={{inputs.parameters.sharpen}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --resampling_kernel={{inputs.parameters.resampling_kernel}}
+            --green_enhance_coef={{inputs.parameters.green_enhance_coef}}
+            --only_rgb={{inputs.parameters.only_rgb}}
+            --adjust_band={{inputs.parameters.adjust_band}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640066354958
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: min_cut_coef
+          - name: max_cut_coef
+          - name: create_pyd
+          - name: green_enhance
+          - name: green_enhance_coef
+          - name: only_rgb
+          - name: adjust_band
+          - name: exposure_suppress
+          - name: adaptive_stretch
+          - name: tasks
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_image_outbyte_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --min_cut_coef={{inputs.parameters.min_cut_coef}}
+            --max_cut_coef={{inputs.parameters.max_cut_coef}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --green_enhance={{inputs.parameters.green_enhance}}
+            --green_enhance_coef={{inputs.parameters.green_enhance_coef}}
+            --only_rgb={{inputs.parameters.only_rgb}}
+            --adjust_band={{inputs.parameters.adjust_band}}
+            --exposure_suppress={{inputs.parameters.exposure_suppress}}
+            --adaptive_stretch={{inputs.parameters.adaptive_stretch}}
+            --tasks={{inputs.parameters.tasks}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640066360954
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: processing_mode
+          - name: is_single_color
+          - name: single_color_coef
+          - name: processing_method
+          - name: block_size
+          - name: std_file
+          - name: use_cloud_mask
+          - name: cloud_mask_file
+          - name: create_pyd
+          - name: diff_limit
+          - name: diff_limit_coef
+          - name: var_diff_limit_coef
+          - name: stretch
+          - name: min_coef
+          - name: max_coef
+          - name: expose_control
+          - name: adjust_brightness
+          - name: brightness_coef
+          - name: adjust_contrast
+          - name: contrast_coef
+          - name: task
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_dodging_cmd1.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --processing_mode={{inputs.parameters.processing_mode}}
+            --is_single_color={{inputs.parameters.is_single_color}}
+            --single_color_coef={{inputs.parameters.single_color_coef}}
+            --processing_method={{inputs.parameters.processing_method}}
+            --block_size={{inputs.parameters.block_size}}
+            --std_file={{inputs.parameters.std_file}}
+            --use_cloud_mask={{inputs.parameters.use_cloud_mask}}
+            --cloud_mask_file={{inputs.parameters.cloud_mask_file}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --diff_limit={{inputs.parameters.diff_limit}}
+            --diff_limit_coef={{inputs.parameters.diff_limit_coef}}
+            --var_diff_limit_coef={{inputs.parameters.var_diff_limit_coef}}
+            --stretch={{inputs.parameters.stretch}}
+            --min_coef={{inputs.parameters.min_coef}}
+            --max_coef={{inputs.parameters.max_coef}}
+            --expose_control={{inputs.parameters.expose_control}}
+            --adjust_brightness={{inputs.parameters.adjust_brightness}}
+            --brightness_coef={{inputs.parameters.brightness_coef}}
+            --adjust_contrast={{inputs.parameters.adjust_contrast}}
+            --contrast_coef={{inputs.parameters.contrast_coef}}
+            --task={{inputs.parameters.task}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640066372447
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: self_adjust
+          - name: n_block_size
+          - name: n_guide_block_size
+          - name: n_max_atom
+          - name: d_epsilon
+          - name: d_sky
+          - name: d_omega
+          - name: dehaze_method
+          - name: b_clahe
+          - name: d_cut_limit
+          - name: all_band_clahe
+          - name: expose_control
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_dehaze_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --self_adjust={{inputs.parameters.self_adjust}}
+            --n_block_size={{inputs.parameters.n_block_size}}
+            --n_guide_block_size={{inputs.parameters.n_guide_block_size}}
+            --n_max_atom={{inputs.parameters.n_max_atom}}
+            --d_epsilon={{inputs.parameters.d_epsilon}}
+            --d_sky={{inputs.parameters.d_sky}}
+            --d_omega={{inputs.parameters.d_omega}}
+            --dehaze_method={{inputs.parameters.dehaze_method}}
+            --b_clahe={{inputs.parameters.b_clahe}}
+            --d_cut_limit={{inputs.parameters.d_cut_limit}}
+            --all_band_clahe={{inputs.parameters.all_band_clahe}}
+            --expose_control={{inputs.parameters.expose_control}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640081354082
+      inputs:
+        parameters:
+          - name: input_files
+          - name: output_file
+          - name: dem_file
+          - name: config_file
+          - name: tie_file
+          - name: sensor_type
+          - name: image_type
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_intersect_obj_cmd.py
+            --input_files={{inputs.parameters.input_files}}
+            --output_file={{inputs.parameters.output_file}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --tie_file={{inputs.parameters.tie_file}}
+            --sensor_type={{inputs.parameters.sensor_type}}
+            --image_type={{inputs.parameters.image_type}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1641275745491
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: suffix
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/process/xq_batch_rule.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --suffix={{inputs.parameters.suffix}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1641275762908
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: input_shp_dir
+          - name: config_file
+          - name: exact_intersection
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_intersect_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --input_shp_dir={{inputs.parameters.input_shp_dir}}
+            --config_file={{inputs.parameters.config_file}}
+            --exact_intersection={{inputs.parameters.exact_intersection}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1641275846919
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: suffix
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/process/xq_batch_rule.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --suffix={{inputs.parameters.suffix}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1641275861893
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: input_shp_dir
+          - name: config_file
+          - name: exact_intersection
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_intersect_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --input_shp_dir={{inputs.parameters.input_shp_dir}}
+            --config_file={{inputs.parameters.config_file}}
+            --exact_intersection={{inputs.parameters.exact_intersection}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1641275867119
+      inputs:
+        parameters:
+          - name: input_txt_dir
+          - name: output_file
+          - name: count
+          - name: output_dir
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/intersected_shps.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python /opt/rsi/process/parse_intersected.py
+            --input_txt_dir={{inputs.parameters.input_txt_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --count={{inputs.parameters.count}}
+            --output_dir={{inputs.parameters.output_dir}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1641361144850
+      inputs:
+        parameters:
+          - name: input_txt_dir
+          - name: output_file
+          - name: count
+          - name: output_dir
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/intersected_shps.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python /opt/rsi/process/parse_intersected.py
+            --input_txt_dir={{inputs.parameters.input_txt_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --count={{inputs.parameters.count}}
+            --output_dir={{inputs.parameters.output_dir}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1641458668845
+      inputs:
+        parameters:
+          - name: input_files
+          - name: output_dir
+          - name: dem_file
+          - name: config_file
+          - name: is_del_tie_error_pt
+          - name: del_tie_pt_thre
+          - name: is_del_gcp_error_pt
+          - name: del_gcp_thre
+          - name: adjustment_model
+          - name: base_img_weight
+          - name: is_set_gcp_weight
+          - name: gcp_weight
+          - name: max_num_iterations
+          - name: tie_file
+          - name: gcp_file
+          - name: keep_rpc_header
+          - name: mux_as_second
+          - name: sensor_type
+          - name: error_images
+          - name: ctrl_images
+          - name: image_type
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 8
+          requests:
+            memory: 8Gi
+            cpu: 8
+        args:
+          - >-
+            cd /opt/linux64; python3 /opt/rsi/xq_bundle_cmd_v2.py
+            --input_files={{inputs.parameters.input_files}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --is_del_tie_error_pt={{inputs.parameters.is_del_tie_error_pt}}
+            --del_tie_pt_thre={{inputs.parameters.del_tie_pt_thre}}
+            --is_del_gcp_error_pt={{inputs.parameters.is_del_gcp_error_pt}}
+            --del_gcp_thre={{inputs.parameters.del_gcp_thre}}
+            --adjustment_model={{inputs.parameters.adjustment_model}}
+            --base_img_weight={{inputs.parameters.base_img_weight}}
+            --is_set_gcp_weight={{inputs.parameters.is_set_gcp_weight}}
+            --gcp_weight={{inputs.parameters.gcp_weight}}
+            --max_num_iterations={{inputs.parameters.max_num_iterations}}
+            --tie_file={{inputs.parameters.tie_file}}
+            --gcp_file={{inputs.parameters.gcp_file}}
+            --keep_rpc_header={{inputs.parameters.keep_rpc_header}}
+            --mux_as_second={{inputs.parameters.mux_as_second}}
+            --sensor_type={{inputs.parameters.sensor_type}}
+            --error_images={{inputs.parameters.error_images}}
+            --ctrl_images={{inputs.parameters.ctrl_images}}
+            --image_type={{inputs.parameters.image_type}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1644482071785
+      inputs:
+        parameters:
+          - name: input_dir
+          - name: output_file
+          - name: config_file
+          - name: mosaic_list_file
+          - name: extent_shp_file
+          - name: gsd
+          - name: create_pyd
+          - name: find_line
+          - name: extent_is_envelope
+          - name: resample_method
+          - name: gen_line_only
+          - name: small_overlap
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 32
+          requests:
+            memory: 16Gi
+            cpu: 32
+        args:
+          - >-
+            python3 /opt/rsi/xq_smart_mosaic1.py
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --mosaic_list_file={{inputs.parameters.mosaic_list_file}}
+            --extent_shp_file={{inputs.parameters.extent_shp_file}}
+            --gsd={{inputs.parameters.gsd}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --find_line={{inputs.parameters.find_line}}
+            --extent_is_envelope={{inputs.parameters.extent_is_envelope}}
+            --resample_method={{inputs.parameters.resample_method}}
+            --gen_line_only={{inputs.parameters.gen_line_only}}
+            --small_overlap={{inputs.parameters.small_overlap}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1644482414173
+      inputs:
+        parameters:
+          - name: input_dir
+          - name: output_file
+          - name: config_file
+          - name: mosaic_list_file
+          - name: extent_shp_file
+          - name: gsd
+          - name: create_pyd
+          - name: find_line
+          - name: extent_is_envelope
+          - name: resample_method
+          - name: gen_line_only
+          - name: small_overlap
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 32
+          requests:
+            memory: 16Gi
+            cpu: 32
+        args:
+          - >-
+            python3 /opt/rsi/xq_smart_mosaic1.py
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --mosaic_list_file={{inputs.parameters.mosaic_list_file}}
+            --extent_shp_file={{inputs.parameters.extent_shp_file}}
+            --gsd={{inputs.parameters.gsd}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --find_line={{inputs.parameters.find_line}}
+            --extent_is_envelope={{inputs.parameters.extent_is_envelope}}
+            --resample_method={{inputs.parameters.resample_method}}
+            --gen_line_only={{inputs.parameters.gen_line_only}}
+            --small_overlap={{inputs.parameters.small_overlap}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1649817940753
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: input_shp_dir
+          - name: config_file
+          - name: exact_intersection
+          - name: is_image_dir
+        artifacts:
+          - name: items
+            path: /tmp/xqks_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_intersect_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --input_shp_dir={{inputs.parameters.input_shp_dir}}
+            --config_file={{inputs.parameters.config_file}}
+            --exact_intersection={{inputs.parameters.exact_intersection}}
+            --is_image_dir={{inputs.parameters.is_image_dir}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1649817947480
+      inputs:
+        parameters:
+          - name: input_dir
+          - name: output_file
+          - name: image_type
+          - name: output_dir
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/intersected_gcp.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python /opt/rsi/process/parse_intersected_gcp.py
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --image_type={{inputs.parameters.image_type}}
+            --output_dir={{inputs.parameters.output_dir}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1651109650078
+      inputs:
+        parameters:
+          - name: input_file
+          - name: input_path
+          - name: output_path
+          - name: suffix_name
+          - name: frame_field
+          - name: is_create_dir
+          - name: thread_num
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            ./tdgis_analysis -td --appname=td_generate_shp_by_extent
+            --input_file={{inputs.parameters.input_file}}
+            --input_path={{inputs.parameters.input_path}}
+            --output_path={{inputs.parameters.output_path}}
+            --suffix_name={{inputs.parameters.suffix_name}}
+            --frame_field={{inputs.parameters.frame_field}}
+            --is_create_dir={{inputs.parameters.is_create_dir}}
+            --thread_num={{inputs.parameters.thread_num}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1651110949493
+      inputs:
+        parameters:
+          - name: input_file
+          - name: input_path
+          - name: output_path
+          - name: suffix_name
+          - name: frame_field
+          - name: is_create_dir
+          - name: thread_num
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            ./tdgis_analysis -td --appname=td_generate_shp_by_extent
+            --input_file={{inputs.parameters.input_file}}
+            --input_path={{inputs.parameters.input_path}}
+            --output_path={{inputs.parameters.output_path}}
+            --suffix_name={{inputs.parameters.suffix_name}}
+            --frame_field={{inputs.parameters.frame_field}}
+            --is_create_dir={{inputs.parameters.is_create_dir}}
+            --thread_num={{inputs.parameters.thread_num}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1655948470620
+      inputs:
+        parameters:
+          - name: input_dir
+          - name: output_mosaic_file
+          - name: config_file
+          - name: mosaic_list_file
+          - name: extent_shp_file
+          - name: gsd
+          - name: create_pyd
+          - name: find_line
+          - name: extent_is_envelope
+          - name: resample_method
+          - name: gen_line_only
+          - name: small_overlap
+          - name: output_crop_dir
+          - name: output_format
+        artifacts:
+          - name: items
+            path: /tmp/intersected_shps.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 24Gi
+            cpu: 4
+          requests:
+            memory: 24Gi
+            cpu: 4
+        args:
+          - >-
+            cd /opt/linux64/Mosaic; python3 /opt/rsi/xq_smart_mosaic_and_crop.py
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_mosaic_file={{inputs.parameters.output_mosaic_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --mosaic_list_file={{inputs.parameters.mosaic_list_file}}
+            --extent_shp_file={{inputs.parameters.extent_shp_file}}
+            --gsd={{inputs.parameters.gsd}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --find_line={{inputs.parameters.find_line}}
+            --extent_is_envelope={{inputs.parameters.extent_is_envelope}}
+            --resample_method={{inputs.parameters.resample_method}}
+            --gen_line_only={{inputs.parameters.gen_line_only}}
+            --small_overlap={{inputs.parameters.small_overlap}}
+            --output_crop_dir={{inputs.parameters.output_crop_dir}}
+            --output_format={{inputs.parameters.output_format}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1655948490334
+      inputs:
+        parameters:
+          - name: input_dir
+          - name: output_mosaic_file
+          - name: config_file
+          - name: mosaic_list_file
+          - name: extent_shp_file
+          - name: gsd
+          - name: create_pyd
+          - name: find_line
+          - name: extent_is_envelope
+          - name: resample_method
+          - name: gen_line_only
+          - name: small_overlap
+          - name: output_crop_dir
+          - name: output_format
+        artifacts:
+          - name: items
+            path: /tmp/intersected_shps.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 24Gi
+            cpu: 4
+          requests:
+            memory: 24Gi
+            cpu: 4
+        args:
+          - >-
+            cd /opt/linux64/Mosaic; python3 /opt/rsi/xq_smart_mosaic_and_crop.py
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_mosaic_file={{inputs.parameters.output_mosaic_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --mosaic_list_file={{inputs.parameters.mosaic_list_file}}
+            --extent_shp_file={{inputs.parameters.extent_shp_file}}
+            --gsd={{inputs.parameters.gsd}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --find_line={{inputs.parameters.find_line}}
+            --extent_is_envelope={{inputs.parameters.extent_is_envelope}}
+            --resample_method={{inputs.parameters.resample_method}}
+            --gen_line_only={{inputs.parameters.gen_line_only}}
+            --small_overlap={{inputs.parameters.small_overlap}}
+            --output_crop_dir={{inputs.parameters.output_crop_dir}}
+            --output_format={{inputs.parameters.output_format}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1655965353518
+      inputs:
+        parameters:
+          - name: input_dir
+          - name: mosaic_list_file
+          - name: output_file
+          - name: create_pyd
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 24Gi
+            cpu: 12
+          requests:
+            memory: 24Gi
+            cpu: 12
+        args:
+          - >-
+            python /opt/rsi/xq_mosaic.py
+            --input_dir={{inputs.parameters.input_dir}}
+            --mosaic_list_file={{inputs.parameters.mosaic_list_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1655965867463
+      inputs:
+        parameters:
+          - name: input_dir
+          - name: mosaic_list_file
+          - name: output_file
+          - name: create_pyd
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 24Gi
+            cpu: 12
+          requests:
+            memory: 24Gi
+            cpu: 12
+        args:
+          - >-
+            python /opt/rsi/xq_mosaic.py
+            --input_dir={{inputs.parameters.input_dir}}
+            --mosaic_list_file={{inputs.parameters.mosaic_list_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1656572166262
+      inputs:
+        parameters:
+          - name: input_files
+          - name: output_dir
+          - name: dem_file
+          - name: config_file
+          - name: is_del_tie_error_pt
+          - name: del_tie_pt_thre
+          - name: is_del_gcp_error_pt
+          - name: del_gcp_thre
+          - name: adjustment_model
+          - name: base_img_weight
+          - name: is_set_gcp_weight
+          - name: gcp_weight
+          - name: tie_file
+          - name: gcp_file
+          - name: sensor_type
+          - name: error_images
+          - name: ctrl_images
+          - name: image_type
+          - name: max_num_iterations
+          - name: keep_rpc_header
+          - name: mux_as_second
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi:v2.1'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 8
+          requests:
+            memory: 8Gi
+            cpu: 8
+        args:
+          - >-
+            python3 /opt/rsi/xq_bundle_cmd_v2.py
+            --input_files={{inputs.parameters.input_files}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --is_del_tie_error_pt={{inputs.parameters.is_del_tie_error_pt}}
+            --del_tie_pt_thre={{inputs.parameters.del_tie_pt_thre}}
+            --is_del_gcp_error_pt={{inputs.parameters.is_del_gcp_error_pt}}
+            --del_gcp_thre={{inputs.parameters.del_gcp_thre}}
+            --adjustment_model={{inputs.parameters.adjustment_model}}
+            --base_img_weight={{inputs.parameters.base_img_weight}}
+            --is_set_gcp_weight={{inputs.parameters.is_set_gcp_weight}}
+            --gcp_weight={{inputs.parameters.gcp_weight}}
+            --tie_file={{inputs.parameters.tie_file}}
+            --gcp_file={{inputs.parameters.gcp_file}}
+            --sensor_type={{inputs.parameters.sensor_type}}
+            --error_images={{inputs.parameters.error_images}}
+            --ctrl_images={{inputs.parameters.ctrl_images}}
+            --image_type={{inputs.parameters.image_type}}
+            --max_num_iterations={{inputs.parameters.max_num_iterations}}
+            --keep_rpc_header={{inputs.parameters.keep_rpc_header}}
+            --mux_as_second={{inputs.parameters.mux_as_second}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1656582319501
+      inputs:
+        parameters:
+          - name: input_image_dir
+          - name: input_rpc_dir
+          - name: output_dir
+          - name: image_type
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/process/bundle_img_rpc_xq.py
+            --input_image_dir={{inputs.parameters.input_image_dir}}
+            --input_rpc_dir={{inputs.parameters.input_rpc_dir}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --image_type={{inputs.parameters.image_type}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
