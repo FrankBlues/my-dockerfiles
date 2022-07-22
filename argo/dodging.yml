@@ -1,0 +1,360 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dodging-batch-new
+  namespace: default
+spec:
+  entrypoint: dodging-batch-new
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012111412
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private
+      - name: input_path
+        value: /mnt/cephfs/rsi/result/1/RSI20220621/DOM/outbyte/kongsan_result
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/mlm/result/dom/
+      - name: dodging_std_file
+        value: /mnt/cephfs/rsi/data/mlm/GF2/DOM/2J_DOM.tif
+      - name: chunk_size
+        value: 512
+      - name: processing_method
+        value: 3
+      - name: is_single_color
+        value: 0
+      - name: single_color_coef
+        value: '0.3'
+      - name: use_cloud_mask
+        value: 0
+      - name: cloud_mask_file
+        value: ''
+      - name: exposure_suppress
+        value: 0
+      - name: expose_control_threhold
+        value: 0.2
+      - name: diff_limit
+        value: 0
+      - name: diff_limit_coef
+        value: '0.5'
+      - name: var_diff_limit_coef
+        value: '0.5'
+      - name: adjust_brightness
+        value: 0
+      - name: brightness_coef
+        value: '0.1'
+      - name: adjust_contrast
+        value: 0
+      - name: contrast_coef
+        value: '0.1'
+      - name: create_pyd
+        value: 0
+      - name: sharpen
+        value: 1
+      - name: dehaze
+        value: 1
+      - name: dehaze_coef
+        value: 0.95
+  onExit: ''
+  templates:
+    - name: dodging-batch-new
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: output_path
+          - name: dodging_std_file
+          - name: chunk_size
+          - name: processing_method
+          - name: is_single_color
+          - name: single_color_coef
+          - name: use_cloud_mask
+          - name: cloud_mask_file
+          - name: exposure_suppress
+          - name: expose_control_threhold
+          - name: diff_limit
+          - name: diff_limit_coef
+          - name: var_diff_limit_coef
+          - name: adjust_brightness
+          - name: brightness_coef
+          - name: adjust_contrast
+          - name: contrast_coef
+          - name: create_pyd
+          - name: sharpen
+          - name: dehaze
+          - name: dehaze_coef
+        artifacts: []
+      dag:
+        tasks:
+          - name: xq-batch-rule-8235
+            template: topo-1634981028628
+            key: topo-1634981028628
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/image_parallel.json
+                - name: suffix
+                  value: .tif
+            dependencies: []
+          - name: xq-dodging-cdqq
+            template: topo-1640051497180
+            key: topo-1640051497180
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].input_file'| sed 's/\"//g'`
+                - name: output_dir
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].dodging_path'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQDodgingCmd.task
+                - name: processing_mode
+                  value: '0'
+                - name: is_single_color
+                  value: '{{inputs.parameters.is_single_color}}'
+                - name: single_color_coef
+                  value: '{{inputs.parameters.single_color_coef}}'
+                - name: processing_method
+                  value: '{{inputs.parameters.processing_method}}'
+                - name: block_size
+                  value: '{{inputs.parameters.chunk_size}}'
+                - name: std_file
+                  value: '{{inputs.parameters.dodging_std_file}}'
+                - name: use_cloud_mask
+                  value: '{{inputs.parameters.use_cloud_mask}}'
+                - name: cloud_mask_file
+                  value: '{{inputs.parameters.cloud_mask_file}}'
+                - name: create_pyd
+                  value: '{{inputs.parameters.create_pyd}}'
+                - name: diff_limit
+                  value: '{{inputs.parameters.diff_limit}}'
+                - name: diff_limit_coef
+                  value: '{{inputs.parameters.diff_limit_coef}}'
+                - name: var_diff_limit_coef
+                  value: '{{inputs.parameters.var_diff_limit_coef}}'
+                - name: stretch
+                  value: '0'
+                - name: sharpen
+                  value: '{{inputs.parameters.sharpen}}'
+                - name: dehaze
+                  value: '{{inputs.parameters.dehaze}}'
+                - name: dehaze_coef
+                  value: '{{inputs.parameters.dehaze_coef}}'
+                - name: use_dodging_template_lib
+                  value: '0'
+                - name: dodging_template_lib_dir
+                  value: /etc/dodgingTemplate/china150/
+                - name: min_coef
+                  value: '0.25'
+                - name: max_coef
+                  value: '0.25'
+                - name: expose_control
+                  value: '{{inputs.parameters.exposure_suppress}}'
+                - name: expose_control_threhold
+                  value: '{{inputs.parameters.expose_control_threhold}}'
+                - name: adjust_brightness
+                  value: '{{inputs.parameters.adjust_brightness}}'
+                - name: brightness_coef
+                  value: '{{inputs.parameters.brightness_coef}}'
+                - name: adjust_contrast
+                  value: '{{inputs.parameters.adjust_contrast}}'
+                - name: contrast_coef
+                  value: '{{inputs.parameters.contrast_coef}}'
+                - name: task
+                  value: '4'
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-8235.outputs.artifacts.items}}'
+            dependencies:
+              - xq-batch-rule-8235
+            withSequence:
+              count: '{{tasks.xq-batch-rule-8235.outputs.parameters.count}}'
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1634981028628
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: suffix
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/process/xq_batch_rule_multi_source.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --suffix={{inputs.parameters.suffix}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1640051497180
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_dir
+          - name: config_file
+          - name: processing_mode
+          - name: is_single_color
+          - name: single_color_coef
+          - name: processing_method
+          - name: block_size
+          - name: std_file
+          - name: use_cloud_mask
+          - name: cloud_mask_file
+          - name: create_pyd
+          - name: diff_limit
+          - name: diff_limit_coef
+          - name: var_diff_limit_coef
+          - name: stretch
+          - name: sharpen
+          - name: dehaze
+          - name: dehaze_coef
+          - name: use_dodging_template_lib
+          - name: dodging_template_lib_dir
+          - name: min_coef
+          - name: max_coef
+          - name: expose_control
+          - name: expose_control_threhold
+          - name: adjust_brightness
+          - name: brightness_coef
+          - name: adjust_contrast
+          - name: contrast_coef
+          - name: task
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.13.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/xq_dodging_cmd2.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --config_file={{inputs.parameters.config_file}}
+            --processing_mode={{inputs.parameters.processing_mode}}
+            --is_single_color={{inputs.parameters.is_single_color}}
+            --single_color_coef={{inputs.parameters.single_color_coef}}
+            --processing_method={{inputs.parameters.processing_method}}
+            --block_size={{inputs.parameters.block_size}}
+            --std_file={{inputs.parameters.std_file}}
+            --use_cloud_mask={{inputs.parameters.use_cloud_mask}}
+            --cloud_mask_file={{inputs.parameters.cloud_mask_file}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --diff_limit={{inputs.parameters.diff_limit}}
+            --diff_limit_coef={{inputs.parameters.diff_limit_coef}}
+            --var_diff_limit_coef={{inputs.parameters.var_diff_limit_coef}}
+            --stretch={{inputs.parameters.stretch}}
+            --sharpen={{inputs.parameters.sharpen}}
+            --dehaze={{inputs.parameters.dehaze}}
+            --dehaze_coef={{inputs.parameters.dehaze_coef}}
+            --use_dodging_template_lib={{inputs.parameters.use_dodging_template_lib}}
+            --dodging_template_lib_dir={{inputs.parameters.dodging_template_lib_dir}}
+            --min_coef={{inputs.parameters.min_coef}}
+            --max_coef={{inputs.parameters.max_coef}}
+            --expose_control={{inputs.parameters.expose_control}}
+            --expose_control_threhold={{inputs.parameters.expose_control_threhold}}
+            --adjust_brightness={{inputs.parameters.adjust_brightness}}
+            --brightness_coef={{inputs.parameters.brightness_coef}}
+            --adjust_contrast={{inputs.parameters.adjust_contrast}}
+            --contrast_coef={{inputs.parameters.contrast_coef}}
+            --task={{inputs.parameters.task}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
