@@ -1,0 +1,272 @@
+metadata:
+  namespace: default
+  generateName: ai-result-to-geojson-storage
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+spec:
+  onExit: ''
+  entrypoint: ai-result-to-geojson-storage
+  templates:
+    - outputs:
+        parameters: []
+        artifacts: []
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_file
+          - name: input_path
+          - name: output_file
+          - name: group_shp
+          - name: dataset_id
+        artifacts: []
+      parallelism: 150
+      name: ai-result-to-geojson-storage
+      dag:
+        tasks:
+          - name: ogr2ogr-basic-quys
+            template: topo-1635322834720
+            key: topo-1635322834720
+            arguments:
+              parameters:
+                - name: input_file
+                  value: '{{inputs.parameters.input_path}}/result.shp'
+                - name: output_file
+                  value: '{{inputs.parameters.output_file}}'
+            dependencies:
+              - add-center-point-49s4-l2nv
+          - name: geojson-storage-ksho
+            template: topo-1635328295938
+            key: topo-1635328295938
+            arguments:
+              parameters:
+                - editable: false
+                  name: dataSetId
+                  value: '{{inputs.parameters.dataset_id}}'
+                - editable: false
+                  name: srcPath
+                  value: '{{inputs.parameters.output_file}}'
+                - editable: false
+                  name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - editable: false
+                  name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - editable: false
+                  name: operatorCode
+                  value: importShpData
+            dependencies:
+              - ogr2ogr-basic-quys
+          - name: add-center-point
+            template: topo-1635479202800
+            key: topo-1635479202800
+            arguments:
+              parameters:
+                - name: shp_path
+                  value: '{{inputs.parameters.input_file}}'
+                - name: input_path
+                  value: '{{inputs.parameters.input_path}}'
+                - name: exec_code
+                  value: '{{inputs.parameters.exec_code}}'
+            dependencies: []
+          - name: add-center-point-49s4-l2nv
+            template: topo-1637548534837
+            key: topo-1637548534837
+            arguments:
+              parameters:
+                - name: shp_path
+                  value: '{{inputs.parameters.input_file}}'
+            dependencies:
+              - add-center-point
+    - suspend:
+        duration: '{{inputs.parameters.time}}'
+      inputs:
+        parameters:
+          - name: time
+      name: delay
+    - name: topo-1635322834720
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+      container:
+        args: 
+          - >-
+            mkdir -p $(dirname {{inputs.parameters.output_file}});ogr2ogr
+            {{inputs.parameters.output_file}} {{inputs.parameters.input_file}}
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: 8Gi
+            cpu: 4
+          limits:
+            memory: 8Gi
+            cpu: 4
+        command:
+          - sh
+          - '-c'
+        volumeMounts:
+          - mountPath: '{{workflow.parameters.ceph_path}}'
+            name: workdir
+          - mountPath: '{{workflow.parameters.share_path}}'
+            name: sharedir
+    - name: topo-1635328295938
+      inputs:
+        parameters:
+          - name: dataSetId
+          - name: srcPath
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+      container:
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --dataSetId={{inputs.parameters.dataSetId}}
+            --srcPath={{inputs.parameters.srcPath}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        image: 'registry.private.cloud:30002/rsi_group/rsi-biz:v0.11.0'
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: 24Gi
+            cpu: '4'
+          limits:
+            memory: 24Gi
+            cpu: '4'
+        command:
+          - sh
+          - '-c'
+        volumeMounts:
+          - mountPath: '{{workflow.parameters.ceph_path}}'
+            name: workdir
+          - mountPath: '{{workflow.parameters.share_path}}'
+            name: sharedir
+    - name: topo-1635479202800
+      inputs:
+        parameters:
+          - name: shp_path
+          - name: input_path
+          - name: exec_code
+      container:
+        args: 
+          - >-
+            ./tdgis_analysis -td --appname=td_add_center_point_and_2geojson
+            --shp_path={{inputs.parameters.shp_path}} --function_id=1
+            --group_shp={{inputs.parameters.input_path}}/{{inputs.parameters.exec_code}}.shp
+            --feature_num=500
+        image: 'registry.private.cloud:30002/datagaea/gis-business:v1.16'
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: 4Gi
+            cpu: 1
+          limits:
+            memory: 4Gi
+            cpu: 1
+        command:
+          - sh
+          - '-c'
+        volumeMounts:
+          - mountPath: '{{workflow.parameters.ceph_path}}'
+            name: workdir
+          - mountPath: '{{workflow.parameters.share_path}}'
+            name: sharedir
+    - name: topo-1637548534837
+      inputs:
+        parameters:
+          - name: shp_path
+      container:
+        args: 
+          - >-
+            ./tdgis_analysis -td --appname=td_add_center_point_and_2geojson
+            --shp_path={{inputs.parameters.shp_path}} --function_id=2
+            --feature_num=500
+        image: 'registry.private.cloud:30002/datagaea/gis-business:v1.16'
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: 48Gi
+            cpu: 12
+            nvidia.com/gpu: 1
+          limits:
+            memory: 48Gi
+            cpu: 12
+            nvidia.com/gpu: 1
+        command:
+          - sh
+          - '-c'
+        volumeMounts:
+          - mountPath: '{{workflow.parameters.ceph_path}}'
+            name: workdir
+          - mountPath: '{{workflow.parameters.share_path}}'
+            name: sharedir
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202011091504
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: input_file
+        value: /mnt/cephfs/rsi/in.shp
+      - name: input_path
+        value: /mnt/cephfs/rsi
+      - name: output_file
+        value: /mnt/cephfs/rsi/out.json
+      - name: group_shp
+        value: /mnt/cephfs/rsi/out.shp
+      - name: dataset_id
+        value: 1

@@ -1,0 +1,642 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ortho-batch-panmss-multi-source-cfg
+  namespace: default
+spec:
+  entrypoint: ortho-batch-panmss-multi-source-cfg
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012111412
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private
+      - name: input_path
+        value: /mnt/cephfs/rsi/result/1/RSI20220704/kongsan_result
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/mlm/DOM/ortho
+      - name: dem_path
+        value: /mnt/cephfs/rsi/data/mlm/GF2/DEM
+      - name: ortho_mss_gsdx
+        value: '0.0001'
+      - name: ortho_mss_gsdy
+        value: '0.0001'
+      - name: ortho_pan_gsdx
+        value: '0.00005'
+      - name: ortho_pan_gsdy
+        value: '0.00005'
+      - name: ortho_gsd_cfg
+        value: /mnt/cephfs/rsi/rsi-config/ortho_gsd_config.json
+      - name: ortho_srs
+        value: >-
+          GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS
+          84",6378137,298.2572235630016,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]]
+      - name: clip_by_dem
+        value: 'false'
+      - name: resampling_kernel
+        value: BiLinear
+      - name: create_pyd
+        value: 'true'
+  onExit: ''
+  templates:
+    - name: ortho-batch-panmss-multi-source-cfg
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: output_path
+          - name: dem_path
+          - name: ortho_mss_gsdx
+          - name: ortho_mss_gsdy
+          - name: ortho_pan_gsdx
+          - name: ortho_pan_gsdy
+          - name: ortho_gsd_cfg
+          - name: ortho_srs
+          - name: clip_by_dem
+          - name: resampling_kernel
+          - name: create_pyd
+        artifacts: []
+      dag:
+        tasks:
+          - name: dom-rule-vc95
+            template: topo-1636610813318
+            key: topo-1636610813318
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/dom_parallel.json
+                - name: output_gcp_file
+                  value: /tmp/dom_gcp_parallel.json
+                - name: gsdx_mss
+                  value: '{{inputs.parameters.ortho_mss_gsdx}}'
+                - name: gsdy_mss
+                  value: '{{inputs.parameters.ortho_mss_gsdy}}'
+                - name: gsdx_pan
+                  value: '{{inputs.parameters.ortho_pan_gsdx}}'
+                - name: gsdy_pan
+                  value: '{{inputs.parameters.ortho_pan_gsdy}}'
+                - name: gsd_config
+                  value: '{{inputs.parameters.ortho_gsd_cfg}}'
+            dependencies: []
+          - name: xq-ortho-45ch
+            template: topo-1640065783905
+            key: topo-1640065783905
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].mss_file'|
+                    sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_mss_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQOrthoCmd.xml
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: gsd_x
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].gsdx_mss'|
+                    sed 's/\"//g'`
+                - name: gsd_y
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].gsdy_mss'|
+                    sed 's/\"//g'`
+                - name: wkt_hcs
+                  value: '{{inputs.parameters.ortho_srs}}'
+                - name: resampling_kernel
+                  value: '{{inputs.parameters.resampling_kernel}}'
+                - name: output_8bits
+                  value: 'false'
+                - name: clip_by_dem
+                  value: '{{inputs.parameters.clip_by_dem}}'
+                - name: create_pyd
+                  value: 'true'
+                - name: tasks
+                  value: '4'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - dom-rule-vc95
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: xq-ortho-0y8m
+            template: topo-1640065788943
+            key: topo-1640065788943
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].pan_file'|
+                    sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_pan_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQOrthoCmd.xml
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: gsd_x
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].gsdx_pan'|
+                    sed 's/\"//g'`
+                - name: gsd_y
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].gsdy_pan'|
+                    sed 's/\"//g'`
+                - name: wkt_hcs
+                  value: '{{inputs.parameters.ortho_srs}}'
+                - name: resampling_kernel
+                  value: '{{inputs.parameters.resampling_kernel}}'
+                - name: output_8bits
+                  value: 'false'
+                - name: clip_by_dem
+                  value: '{{inputs.parameters.clip_by_dem}}'
+                - name: create_pyd
+                  value: 'true'
+                - name: tasks
+                  value: '4'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - dom-rule-vc95
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: thumbnail-create-a58u
+            template: topo-1644903837382
+            key: topo-1644903837382
+            arguments:
+              parameters:
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: inputRaster
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_mss_file'| sed 's/\"//g'`
+                - name: outputFile
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_mss_thumbnail'| sed 's/\"//g'`
+                - name: size
+                  value: '500'
+                - name: operatorCode
+                  value: thumbnail
+                - name: operatorCodeAlias
+                  value: orthoCalibrate-analysis
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - calculate-statistics-tyvz
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: thumbnail-create-fc6d
+            template: topo-1644903853939
+            key: topo-1644903853939
+            arguments:
+              parameters:
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: inputRaster
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_pan_file'| sed 's/\"//g'`
+                - name: outputFile
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_pan_thumbnail'| sed 's/\"//g'`
+                - name: size
+                  value: '500'
+                - name: operatorCode
+                  value: thumbnail
+                - name: operatorCodeAlias
+                  value: orthoCalibrate-analysis
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - calculate-statistics-asko
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: calculate-statistics-tyvz
+            template: topo-1657006256799
+            key: topo-1657006256799
+            arguments:
+              parameters:
+                - name: in_raster
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_mss_file'| sed 's/\"//g'`
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - xq-ortho-45ch
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: calculate-statistics-asko
+            template: topo-1657006619050
+            key: topo-1657006619050
+            arguments:
+              parameters:
+                - name: in_raster
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].output_pan_file'| sed 's/\"//g'`
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - xq-ortho-0y8m
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1636610813318
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: output_gcp_file
+          - name: gsdx_mss
+          - name: gsdy_mss
+          - name: gsdx_pan
+          - name: gsdy_pan
+          - name: gsd_config
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/process/dom_rule_multi_source_cfg.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --output_gcp_file={{inputs.parameters.output_gcp_file}}
+            --gsdx_mss={{inputs.parameters.gsdx_mss}}
+            --gsdy_mss={{inputs.parameters.gsdy_mss}}
+            --gsdx_pan={{inputs.parameters.gsdx_pan}}
+            --gsdy_pan={{inputs.parameters.gsdy_pan}}
+            --gsd_config={{inputs.parameters.gsd_config}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1640065783905
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: dem_file
+          - name: gsd_x
+          - name: gsd_y
+          - name: wkt_hcs
+          - name: resampling_kernel
+          - name: output_8bits
+          - name: clip_by_dem
+          - name: create_pyd
+          - name: tasks
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 4
+          requests:
+            memory: 16Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/xq_ortho_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --gsd_x={{inputs.parameters.gsd_x}}
+            --gsd_y={{inputs.parameters.gsd_y}}
+            --wkt_hcs={{inputs.parameters.wkt_hcs}}
+            --resampling_kernel={{inputs.parameters.resampling_kernel}}
+            --output_8bits={{inputs.parameters.output_8bits}}
+            --clip_by_dem={{inputs.parameters.clip_by_dem}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --tasks={{inputs.parameters.tasks}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1640065788943
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: dem_file
+          - name: gsd_x
+          - name: gsd_y
+          - name: wkt_hcs
+          - name: resampling_kernel
+          - name: output_8bits
+          - name: clip_by_dem
+          - name: create_pyd
+          - name: tasks
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 4
+          requests:
+            memory: 16Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/xq_ortho_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --gsd_x={{inputs.parameters.gsd_x}}
+            --gsd_y={{inputs.parameters.gsd_y}}
+            --wkt_hcs={{inputs.parameters.wkt_hcs}}
+            --resampling_kernel={{inputs.parameters.resampling_kernel}}
+            --output_8bits={{inputs.parameters.output_8bits}}
+            --clip_by_dem={{inputs.parameters.clip_by_dem}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --tasks={{inputs.parameters.tasks}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1644903837382
+      inputs:
+        parameters:
+          - name: execCode
+          - name: tenantId
+          - name: inputRaster
+          - name: outputFile
+          - name: size
+          - name: operatorCode
+          - name: operatorCodeAlias
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --execCode={{inputs.parameters.execCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --inputRaster={{inputs.parameters.inputRaster}}
+            --outputFile={{inputs.parameters.outputFile}}
+            --size={{inputs.parameters.size}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1644903853939
+      inputs:
+        parameters:
+          - name: execCode
+          - name: tenantId
+          - name: inputRaster
+          - name: outputFile
+          - name: size
+          - name: operatorCode
+          - name: operatorCodeAlias
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --execCode={{inputs.parameters.execCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --inputRaster={{inputs.parameters.inputRaster}}
+            --outputFile={{inputs.parameters.outputFile}}
+            --size={{inputs.parameters.size}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1657006256799
+      inputs:
+        parameters:
+          - name: in_raster
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: 
+          - >-
+            python3 /opt/rsi/calculate_statistics.py
+            --in_raster={{inputs.parameters.in_raster}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1657006619050
+      inputs:
+        parameters:
+          - name: in_raster
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: 
+          - >-
+            python3 /opt/rsi/calculate_statistics.py
+            --in_raster={{inputs.parameters.in_raster}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi

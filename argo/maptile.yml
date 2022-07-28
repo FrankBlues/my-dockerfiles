@@ -1,0 +1,597 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: image-blocks2tiles-new
+  namespace: default
+spec:
+  entrypoint: image-blocks2tiles-new
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012345678
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: input_image_dir
+        value: /mnt/cephfs/rsi/data/test_AT/dom/
+      - name: output_tiles_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/tiles/
+      - name: zoom_level
+        value: 1-19
+      - name: blocks
+        value: 10000
+      - name: obs_dirs_up
+        value: obs/dirs/up
+  onExit: ''
+  templates:
+    - name: image-blocks2tiles-new
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_image_dir
+          - name: output_tiles_path
+          - name: zoom_level
+          - name: blocks
+          - name: obs_dirs_up
+        artifacts: []
+      dag:
+        tasks:
+          - name: generate-block-xml-cccv
+            template: topo-1624238624714
+            key: topo-1624238624714
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: imageBlockFile
+                - name: xmlPath
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xml/block_params.xml
+                - name: filePath
+                  value: >-
+                    {{tasks.parse-json-blocks-1av1.outputs.parameters.img_path}}
+                - name: epsg
+                  value: '{{tasks.parse-json-blocks-1av1.outputs.parameters.epsg}}'
+                - name: fileType
+                  value: >-
+                    {{tasks.parse-json-blocks-1av1.outputs.parameters.file_type}}
+            dependencies:
+              - parse-json-blocks-1av1
+          - name: image-block2tiles-se8x
+            template: topo-1624238633097
+            key: topo-1624238633097
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: imageBlock
+                - name: m
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xml/block_params.xml
+                - name: o
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/tiles
+                - name: z
+                  value: '{{tasks.parse-json-blocks-1av1.outputs.parameters.zoom}}'
+                - name: b
+                  value: >-
+                    {{tasks.parse-json-blocks-1av1.outputs.parameters.raster_size}}
+                - name: e
+                  value: '{{tasks.parse-json-blocks-1av1.outputs.parameters.epsg}}'
+                - name: 'n'
+                  value: test
+                - name: t
+                  value: '4'
+                - name: f
+                  value: '1'
+                - name: i
+                  value: '5'
+                - name: s
+                  value: '{{inputs.parameters.blocks}}'
+            dependencies:
+              - generate-block-xml-cccv
+          - name: image-block2tiles-q1ja
+            template: topo-1624238635625
+            key: topo-1624238635625
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: imageBlock
+                - name: m
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xml/block_params.xml
+                - name: o
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/tiles
+                - name: z
+                  value: '{{tasks.parse-json-blocks-1av1.outputs.parameters.zoom}}'
+                - name: b
+                  value: >-
+                    {{tasks.parse-json-blocks-1av1.outputs.parameters.raster_size}}
+                - name: e
+                  value: '{{tasks.parse-json-blocks-1av1.outputs.parameters.epsg}}'
+                - name: 'n'
+                  value: test
+                - name: t
+                  value: '4'
+                - name: f
+                  value: '2'
+                - name: i
+                  value: '{{item}}'
+                - name: s
+                  value: '{{inputs.parameters.blocks}}'
+            dependencies:
+              - image-block2tiles-se8x
+            withSequence:
+              count: '{{tasks.image-block2tiles-se8x.outputs.parameters.tiles}}'
+          - name: block-params-prepare-lexb
+            template: topo-1624845015436
+            key: topo-1624845015436
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: imageBlockParam
+                - name: appName
+                  value: td_raster_epsg_get
+                - name: inputPath
+                  value: '{{inputs.parameters.input_image_dir}}'
+                - name: outPath
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/json/json_params.xml
+                - name: folderId
+                  value: '1'
+                - name: business
+                  value: '100'
+                - name: bucket
+                  value: test
+                - name: endPoint
+                  value: 'http://192.168.1.1:7480'
+                - name: yearCode
+                  value: '2021'
+                - name: batchNo
+                  value: '0'
+                - name: imgType
+                  value: DOM
+                - name: xzqCode
+                  value: '610603'
+                - name: zoom
+                  value: '{{inputs.parameters.zoom_level}}'
+            dependencies: []
+          - name: parse-json-blocks-1av1
+            template: topo-1624845019869
+            key: topo-1624845019869
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: input_json_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/json/json_params.xml
+                - name: out_epsg
+                  value: /tmp/epsg.txt
+                - name: out_img_path
+                  value: /tmp/img_path.txt
+                - name: out_file_type
+                  value: /tmp/file_type.txt
+                - name: out_zoom
+                  value: /tmp/zoom.txt
+                - name: out_raster_size
+                  value: /tmp/raster_size.txt
+            dependencies:
+              - block-params-prepare-lexb
+          - name: rsi-upload-87el
+            template: topo-1624874670896
+            key: topo-1624874670896
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: uploadFile
+                - name: obsDir
+                  value: '{{inputs.parameters.obs_dirs_up}}'
+                - name: localPath
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/tiles
+                - name: accessKey
+                  value: '{{inputs.parameters.accesskey}}'
+                - name: secretKey
+                  value: '{{inputs.parameters.secretkey}}'
+                - name: endpoint
+                  value: '{{inputs.parameters.endpoint}}'
+                - name: protocol
+                  value: '{{inputs.parameters.protocol}}'
+                - name: bucket
+                  value: '{{inputs.parameters.output_bucket}}'
+                - name: operatorCodeAlias
+                  value: tiles-uploadFile
+            dependencies:
+              - image-block2tiles-q1ja
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1624238624714
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: xmlPath
+          - name: filePath
+          - name: epsg
+          - name: fileType
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-maptile:v0.9.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --xmlPath={{inputs.parameters.xmlPath}}
+            --filePath={{inputs.parameters.filePath}}
+            --epsg={{inputs.parameters.epsg}}
+            --fileType={{inputs.parameters.fileType}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1624238633097
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: m
+          - name: o
+          - name: z
+          - name: b
+          - name: e
+          - name: 'n'
+          - name: t
+          - name: f
+          - name: i
+          - name: s
+      outputs:
+        parameters:
+          - name: tiles
+            valueFrom:
+              path: '{{inputs.parameters.o}}/tile.txt'
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-maptile:v0.9.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --m={{inputs.parameters.m}} --o={{inputs.parameters.o}}
+            --z={{inputs.parameters.z}} --b={{inputs.parameters.b}}
+            --e={{inputs.parameters.e}} --n={{inputs.parameters.n}}
+            --t={{inputs.parameters.t}} --f={{inputs.parameters.f}}
+            --i={{inputs.parameters.i}} --s={{inputs.parameters.s}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1624238635625
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: m
+          - name: o
+          - name: z
+          - name: b
+          - name: e
+          - name: 'n'
+          - name: t
+          - name: f
+          - name: i
+          - name: s
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-maptile:v0.9.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --m={{inputs.parameters.m}} --o={{inputs.parameters.o}}
+            --z={{inputs.parameters.z}} --b={{inputs.parameters.b}}
+            --e={{inputs.parameters.e}} --n={{inputs.parameters.n}}
+            --t={{inputs.parameters.t}} --f={{inputs.parameters.f}}
+            --i={{inputs.parameters.i}} --s={{inputs.parameters.s}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1624845015436
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: appName
+          - name: inputPath
+          - name: outPath
+          - name: folderId
+          - name: business
+          - name: bucket
+          - name: endPoint
+          - name: yearCode
+          - name: batchNo
+          - name: imgType
+          - name: xzqCode
+          - name: zoom
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.9.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --appName={{inputs.parameters.appName}}
+            --inputPath={{inputs.parameters.inputPath}}
+            --outPath={{inputs.parameters.outPath}}
+            --folderId={{inputs.parameters.folderId}}
+            --business={{inputs.parameters.business}}
+            --bucket={{inputs.parameters.bucket}}
+            --endPoint={{inputs.parameters.endPoint}}
+            --yearCode={{inputs.parameters.yearCode}}
+            --batchNo={{inputs.parameters.batchNo}}
+            --imgType={{inputs.parameters.imgType}}
+            --xzqCode={{inputs.parameters.xzqCode}}
+            --zoom={{inputs.parameters.zoom}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1624845019869
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: input_json_file
+          - name: out_epsg
+          - name: out_img_path
+          - name: out_file_type
+          - name: out_zoom
+          - name: out_raster_size
+      outputs:
+        parameters:
+          - name: img_path
+            valueFrom:
+              path: /tmp/img_path.txt
+          - name: epsg
+            valueFrom:
+              path: /tmp/epsg.txt
+          - name: file_type
+            valueFrom:
+              path: /tmp/file_type.txt
+          - name: raster_size
+            valueFrom:
+              path: /tmp/raster_size.txt
+          - name: zoom
+            valueFrom:
+              path: /tmp/zoom.txt
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-compress:v0.9.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            python /opt/parse_json2txt.py
+            --input_json_file={{inputs.parameters.input_json_file}}
+            --out_epsg={{inputs.parameters.out_epsg}}
+            --out_img_path={{inputs.parameters.out_img_path}}
+            --out_file_type={{inputs.parameters.out_file_type}}
+            --out_zoom={{inputs.parameters.out_zoom}}
+            --out_raster_size={{inputs.parameters.out_raster_size}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1624874670896
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: obsDir
+          - name: localPath
+          - name: accessKey
+          - name: secretKey
+          - name: endpoint
+          - name: protocol
+          - name: bucket
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-compress:v0.9.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --obsDir={{inputs.parameters.obsDir}}
+            --localPath={{inputs.parameters.localPath}}
+            --accessKey={{inputs.parameters.accessKey}}
+            --secretKey={{inputs.parameters.secretKey}}
+            --endpoint={{inputs.parameters.endpoint}}
+            --protocol={{inputs.parameters.protocol}}
+            --bucket={{inputs.parameters.bucket}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'

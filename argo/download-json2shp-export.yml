@@ -1,0 +1,430 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: download-json2shp-compress
+  namespace: default
+spec:
+  entrypoint: download-json2shp-compress
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012345678
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: input_json
+        value: /mnt/cephfs/rsi/data/Test/mlm/json2shp/geos_building.json
+      - name: output_shp
+        value: /mnt/cephfs/rsi/data/Test/mlm/json2shp/out/json2shp_1.shp
+      - name: output_zip
+        value: /mnt/cephfs/rsi/data/Test/mlm/json2shp/out/json2shp_1.zip
+      - name: obs_dirs
+        value: rsi/json/1111
+      - name: obs_dirs_up
+        value: rsi/shp/1111
+      - name: xzq_file
+        value: /mnt/cephfs/rsi/shapefile/province/province.shp
+      - name: xzq_field
+        value: PROVINCEC
+  onExit: ''
+  templates:
+    - name: download-json2shp-compress
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_json
+          - name: output_shp
+          - name: output_zip
+          - name: obs_dirs
+          - name: obs_dirs_up
+          - name: xzq_file
+          - name: xzq_field
+        artifacts: []
+      dag:
+        tasks:
+          - name: json2shp-mu64
+            template: topo-1623995022245
+            key: topo-1623995022245
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: jsonToShp
+                - name: inputJson
+                  value: '{{inputs.parameters.input_json}}'
+                - name: outShp
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/json2shp/json2shp.shp
+                - name: appName
+                  value: td_jsontoshp_analysis
+            dependencies:
+              - rsi-download-8bw9
+          - name: compress-0yfm
+            template: topo-1623995025903
+            key: topo-1623995025903
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: compress
+                - name: inputFile
+                  value: '{{inputs.parameters.output_shp}}'
+                - name: outputFile
+                  value: '{{inputs.parameters.output_zip}}'
+                - name: operatorCodeAlias
+                  value: jsonToShp-compress
+            dependencies:
+              - center-point-to-shpfile-rvbq
+          - name: rsi-download-8bw9
+            template: topo-1624258870271
+            key: topo-1624258870271
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: downLoadFile
+                - name: obsDirs
+                  value: '{{inputs.parameters.obs_dirs}}'
+                - name: localPath
+                  value: '{{inputs.parameters.input_json}}'
+                - name: accessKey
+                  value: '{{inputs.parameters.accesskey}}'
+                - name: secretKey
+                  value: '{{inputs.parameters.secretkey}}'
+                - name: endpoint
+                  value: '{{inputs.parameters.inner_endpoint}}'
+                - name: storeType
+                  value: '{{inputs.parameters.store_type}}'
+                - name: bucket
+                  value: '{{inputs.parameters.input_bucket}}'
+                - name: operatorCodeAlias
+                  value: json-download
+            dependencies: []
+          - name: rsi-upload-58zq
+            template: topo-1647569639837
+            key: topo-1647569639837
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: uploadFile
+                - name: obsDir
+                  value: '{{inputs.parameters.obs_dirs_up}}'
+                - name: localPath
+                  value: '{{inputs.parameters.output_shp}}'
+                - name: accessKey
+                  value: '{{inputs.parameters.accesskey}}'
+                - name: secretKey
+                  value: '{{inputs.parameters.secretkey}}'
+                - name: endpoint
+                  value: '{{inputs.parameters.endpoint}}'
+                - name: protocol
+                  value: '{{inputs.parameters.protocol}}'
+                - name: bucket
+                  value: '{{inputs.parameters.output_bucket}}'
+                - name: operatorCodeAlias
+                  value: shapefile-uploadFile
+            dependencies:
+              - center-point-to-shpfile-rvbq
+          - name: center-point-to-shpfile-rvbq
+            template: topo-1654069187360
+            key: topo-1654069187360
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: createShpByCenterPoint
+                - name: inputFile
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/json2shp/json2shp.shp
+                - name: xzqField
+                  value: '{{inputs.parameters.xzq_field}}'
+                - name: outputPath
+                  value: '{{inputs.parameters.output_shp}}'
+                - name: threadNum
+                  value: '10'
+                - name: isCreateDir
+                  value: '1'
+                - name: xzqFile
+                  value: '{{inputs.parameters.xzq_file}}'
+            dependencies:
+              - json2shp-mu64
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1623995022245
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputJson
+          - name: outShp
+          - name: appName
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.9.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputJson={{inputs.parameters.inputJson}}
+            --outShp={{inputs.parameters.outShp}}
+            --appName={{inputs.parameters.appName}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1623995025903
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputFile
+          - name: outputFile
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-compress:v0.9.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputFile={{inputs.parameters.inputFile}}
+            --outputFile={{inputs.parameters.outputFile}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1624258870271
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: obsDirs
+          - name: localPath
+          - name: accessKey
+          - name: secretKey
+          - name: endpoint
+          - name: storeType
+          - name: bucket
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-download:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --obsDirs={{inputs.parameters.obsDirs}}
+            --localPath={{inputs.parameters.localPath}}
+            --accessKey={{inputs.parameters.accessKey}}
+            --secretKey={{inputs.parameters.secretKey}}
+            --endpoint={{inputs.parameters.endpoint}}
+            --storeType={{inputs.parameters.storeType}}
+            --bucket={{inputs.parameters.bucket}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1647569639837
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: obsDir
+          - name: localPath
+          - name: accessKey
+          - name: secretKey
+          - name: endpoint
+          - name: protocol
+          - name: bucket
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-compress:v0.9.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --obsDir={{inputs.parameters.obsDir}}
+            --localPath={{inputs.parameters.localPath}}
+            --accessKey={{inputs.parameters.accessKey}}
+            --secretKey={{inputs.parameters.secretKey}}
+            --endpoint={{inputs.parameters.endpoint}}
+            --protocol={{inputs.parameters.protocol}}
+            --bucket={{inputs.parameters.bucket}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1654069187360
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputFile
+          - name: xzqField
+          - name: outputPath
+          - name: threadNum
+          - name: isCreateDir
+          - name: xzqFile
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: [' java -jar /opt/potato-algo-adapter.jar --tenantId={{inputs.parameters.tenantId}} --execCode={{inputs.parameters.execCode}} --operatorCode={{inputs.parameters.operatorCode}} --inputFile={{inputs.parameters.inputFile}} --xzqField={{inputs.parameters.xzqField}} --outputPath={{inputs.parameters.outputPath}} --threadNum={{inputs.parameters.threadNum}} --isCreateDir={{inputs.parameters.isCreateDir}} --xzqFile={{inputs.parameters.xzqFile}} --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-ai-{{workflow.parameters.env}}.yml --s3.protocol={{workflow.parameters.protocol}} --s3.ak={{workflow.parameters.accesskey}} --s3.sk={{workflow.parameters.secretkey}} --s3.bucket={{workflow.parameters.output_bucket}} --s3.endpoint={{workflow.parameters.endpoint}} --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}']
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'

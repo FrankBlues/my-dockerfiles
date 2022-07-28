@@ -1,0 +1,390 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: fusion-batch
+  namespace: default
+spec:
+  entrypoint: fusion-batch
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012111412
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private
+      - name: input_path
+        value: >-
+          /mnt/cephfs/rsi/data/Test/mlm/DOM1/bundle_copy/,/mnt/cephfs/rsi/data/test_AT/images
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/DOM1/
+      - name: fusion_type
+        value: 4
+      - name: green_enhance
+        value: 'false'
+      - name: green_enhance_coef
+        value: '0.1'
+      - name: onlyRGB
+        value: 'false'
+      - name: adjust_band
+        value: 'false'
+      - name: sharpen
+        value: 'false'
+      - name: create_pyd
+        value: 'true'
+  onExit: ''
+  templates:
+    - name: fusion-batch
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: output_path
+          - name: fusion_type
+          - name: green_enhance
+          - name: green_enhance_coef
+          - name: onlyRGB
+          - name: adjust_band
+          - name: sharpen
+          - name: create_pyd
+        artifacts: []
+      dag:
+        tasks:
+          - name: dom-rule-vc95
+            template: topo-1636610813318
+            key: topo-1636610813318
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/dom_parallel.json
+                - name: output_gcp_file
+                  value: /tmp/dom_gcp_parallel.json
+            dependencies: []
+          - name: xq-fusion-aoe6
+            template: topo-1640066328615
+            key: topo-1640066328615
+            arguments:
+              parameters:
+                - name: pan_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].pan_file'|
+                    sed 's/\"//g'`
+                - name: mss_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq '.[{{item}}].mss_file'|
+                    sed 's/\"//g'`
+                - name: config_file
+                  value: XQFusionCmd.xml
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].fusion_file'| sed 's/\"//g'`
+                - name: fusion_type
+                  value: '{{inputs.parameters.fusion_type}}'
+                - name: green_enhance
+                  value: '{{inputs.parameters.green_enhance}}'
+                - name: sharpen
+                  value: '{{inputs.parameters.sharpen}}'
+                - name: create_pyd
+                  value: 'true'
+                - name: resampling_kernel
+                  value: '1'
+                - name: green_enhance_coef
+                  value: '{{inputs.parameters.green_enhance_coef}}'
+                - name: only_rgb
+                  value: '{{inputs.parameters.onlyRGB}}'
+                - name: adjust_band
+                  value: '{{inputs.parameters.adjust_band}}'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - dom-rule-vc95
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: thumbnail-create-i6b2
+            template: topo-1644908153038
+            key: topo-1644908153038
+            arguments:
+              parameters:
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: inputRaster
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].fusion_file'| sed 's/\"//g'`
+                - name: outputFile
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].thumbnail_fusion'| sed 's/\"//g'`
+                - name: size
+                  value: '500'
+                - name: operatorCode
+                  value: thumbnail
+                - name: operatorCodeAlias
+                  value: imageFusion-analysis
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - calculate-statistics-pfql
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+          - name: calculate-statistics-pfql
+            template: topo-1657008155694
+            key: topo-1657008155694
+            arguments:
+              parameters:
+                - name: in_raster
+                  value: >-
+                    `cat /tmp/dom_parallel.json | jq
+                    '.[{{item}}].fusion_file'| sed 's/\"//g'`
+                - name: copy_file
+                  value: 'true'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dom-rule-vc95.outputs.artifacts.items}}'
+            dependencies:
+              - xq-fusion-aoe6
+            withSequence:
+              count: '{{tasks.dom-rule-vc95.outputs.parameters.count}}'
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1636610813318
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: output_gcp_file
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/process/dom_rule_multi_source.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --output_gcp_file={{inputs.parameters.output_gcp_file}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1640066328615
+      inputs:
+        parameters:
+          - name: pan_file
+          - name: mss_file
+          - name: config_file
+          - name: output_file
+          - name: fusion_type
+          - name: green_enhance
+          - name: sharpen
+          - name: create_pyd
+          - name: resampling_kernel
+          - name: green_enhance_coef
+          - name: only_rgb
+          - name: adjust_band
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: 
+          - >-
+            python3 /opt/rsi/xq_fusion_cmd.py
+            --pan_file={{inputs.parameters.pan_file}}
+            --mss_file={{inputs.parameters.mss_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --fusion_type={{inputs.parameters.fusion_type}}
+            --green_enhance={{inputs.parameters.green_enhance}}
+            --sharpen={{inputs.parameters.sharpen}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --resampling_kernel={{inputs.parameters.resampling_kernel}}
+            --green_enhance_coef={{inputs.parameters.green_enhance_coef}}
+            --only_rgb={{inputs.parameters.only_rgb}}
+            --adjust_band={{inputs.parameters.adjust_band}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1644908153038
+      inputs:
+        parameters:
+          - name: execCode
+          - name: tenantId
+          - name: inputRaster
+          - name: outputFile
+          - name: size
+          - name: operatorCode
+          - name: operatorCodeAlias
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --execCode={{inputs.parameters.execCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --inputRaster={{inputs.parameters.inputRaster}}
+            --outputFile={{inputs.parameters.outputFile}}
+            --size={{inputs.parameters.size}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1657008155694
+      inputs:
+        parameters:
+          - name: in_raster
+          - name: copy_file
+        artifacts:
+          - name: items
+            path: /tmp/dom_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: 
+          - >-
+            python3 /opt/rsi/calculate_statistics.py
+            --in_raster={{inputs.parameters.in_raster}}
+            --copy_file={{inputs.parameters.copy_file}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi

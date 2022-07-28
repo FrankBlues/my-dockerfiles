@@ -1,0 +1,382 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dsm-refine
+  namespace: default
+spec:
+  entrypoint: dsm-refine
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: tenant_id
+        value: 1
+      - name: exec_code
+        value: RSI202201010101
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: img_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/DSM/result/rasterize
+      - name: origin_img_path
+        value: >-
+          /mnt/cephfs/rsi/data/Test/mlm/DSM/ZY3/ZY3_E116.3_N40.2_20170708_L1A0003851389
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/DSM/result/refine
+      - name: is_gj
+        value: 'false'
+  onExit: ''
+  templates:
+    - name: dsm-refine
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: tenant_id
+          - name: exec_code
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: img_path
+          - name: origin_img_path
+          - name: output_path
+          - name: is_gj
+        artifacts: []
+      dag:
+        tasks:
+          - name: dsm-rule-7v5v
+            template: topo-1604546844568
+            key: topo-1604546844568
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.origin_img_path}}'
+                - name: image_dir
+                  value: '{{inputs.parameters.img_path}}'
+                - name: output_file
+                  value: /tmp/dsm_parallel.json
+                - name: is_gj
+                  value: '{{inputs.parameters.is_gj}}'
+            dependencies: []
+          - name: thumbnail-jmqy
+            template: topo-1644917451815
+            key: topo-1644917451815
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: tdgisAnalysis
+                - name: inputPath
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].dsmbos_file'| sed 's/\"//g'`
+                - name: outputPath
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].dsm_refine_thumbnail'| sed 's/\"//g'`
+                - name: appName
+                  value: at_raster_thumbnail
+                - name: operatorCodeAlias
+                  value: refine-analysis
+              artifacts:
+                - name: items
+                  from: '{{tasks.dsm-rule-7v5v.outputs.artifacts.items}}'
+            dependencies:
+              - xq-dsm-refine-922r
+            withSequence:
+              count: '{{tasks.dsm-rule-7v5v.outputs.parameters.count}}'
+          - name: xq-dsm-refine-922r
+            template: topo-1645696380235
+            key: topo-1645696380235
+            arguments:
+              parameters:
+                - name: input_dsm_file
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].rasterize_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].dsmbos_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQDsmRefineCmd.task
+                - name: master_image_file
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq '.[{{item}}].fwd_file'|
+                    sed 's/\"//g'`
+                - name: slave_image_file_1
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq '.[{{item}}].bwd_file'|
+                    sed 's/\"//g'`
+                - name: slave_image_file_2
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq '.[{{item}}].nad_file'|
+                    sed 's/\"//g'`
+                - name: do_filter
+                  value: 'true'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dsm-rule-7v5v.outputs.artifacts.items}}'
+            dependencies:
+              - dsm-rule-7v5v
+            withSequence:
+              count: '{{tasks.dsm-rule-7v5v.outputs.parameters.count}}'
+          - name: create-pyamid-yoav
+            template: topo-1656299272416
+            key: topo-1656299272416
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: createPyammid
+                - name: inputImageFilePath
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].dsmbos_file'| sed 's/\"//g'`
+                - name: resampleMethod
+                  value: NEAREST
+              artifacts:
+                - name: items
+                  from: '{{tasks.dsm-rule-7v5v.outputs.artifacts.items}}'
+            dependencies:
+              - thumbnail-jmqy
+            withSequence:
+              count: '{{tasks.dsm-rule-7v5v.outputs.parameters.count}}'
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1604546844568
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: image_dir
+          - name: output_file
+          - name: is_gj
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            python /opt/rsi/process/dsm_rule1-refine.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --image_dir={{inputs.parameters.image_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --is_gj={{inputs.parameters.is_gj}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1644917451815
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputPath
+          - name: outputPath
+          - name: appName
+          - name: operatorCodeAlias
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputPath={{inputs.parameters.inputPath}}
+            --outputPath={{inputs.parameters.outputPath}}
+            --appName={{inputs.parameters.appName}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1645696380235
+      inputs:
+        parameters:
+          - name: input_dsm_file
+          - name: output_file
+          - name: config_file
+          - name: master_image_file
+          - name: slave_image_file_1
+          - name: slave_image_file_2
+          - name: do_filter
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/xq_dsm_refine_cmd.py
+            --input_dsm_file={{inputs.parameters.input_dsm_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --master_image_file={{inputs.parameters.master_image_file}}
+            --slave_image_file_1={{inputs.parameters.slave_image_file_1}}
+            --slave_image_file_2={{inputs.parameters.slave_image_file_2}}
+            --do_filter={{inputs.parameters.do_filter}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1656299272416
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputImageFilePath
+          - name: resampleMethod
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputImageFilePath={{inputs.parameters.inputImageFilePath}}
+            --resampleMethod={{inputs.parameters.resampleMethod}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi

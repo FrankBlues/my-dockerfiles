@@ -1,0 +1,163 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: imagecut
+  namespace: default
+spec:
+  entrypoint: imagecut
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012345678
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: shp_file
+        value: /mnt/cephfs/rsi/imageCropShp/1000000JFB_Transform.shp
+      - name: input_file
+        value: /mnt/cephfs/rsi/data/sandiao0925/SDYX/610124/610124.tif
+      - name: output_dir
+        value: /mnt/cephfs/rsi/result/1/RSI202010101715/cut/RSI202010101715/
+  onExit: ''
+  templates:
+    - name: imagecut
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: shp_file
+          - name: input_file
+          - name: output_dir
+        artifacts: []
+      dag:
+        tasks:
+          - name: image-cut-8inw
+            template: topo-1617673396555
+            key: topo-1617673396555
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: imageCut
+                - name: srcRaster
+                  value: '{{inputs.parameters.input_file}}'
+                - name: dstRaster
+                  value: '{{inputs.parameters.output_dir}}'
+                - name: appName
+                  value: td_raster_cut_analysis
+                - name: vectorPolygons
+                  value: '{{inputs.parameters.shp_file}}'
+                - name: isWkt
+                  value: '1'
+                - name: isByFeature
+                  value: '1'
+                - name: satelliteShp
+                  value: '1'
+            dependencies: []
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1617673396555
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: srcRaster
+          - name: dstRaster
+          - name: appName
+          - name: vectorPolygons
+          - name: isWkt
+          - name: isByFeature
+          - name: satelliteShp
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --srcRaster={{inputs.parameters.srcRaster}}
+            --dstRaster={{inputs.parameters.dstRaster}}
+            --appName={{inputs.parameters.appName}}
+            --vectorPolygons={{inputs.parameters.vectorPolygons}}
+            --isWkt={{inputs.parameters.isWkt}}
+            --isByFeature={{inputs.parameters.isByFeature}}
+            --satelliteShp={{inputs.parameters.satelliteShp}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'

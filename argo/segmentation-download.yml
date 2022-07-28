@@ -1,0 +1,147 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: segmentation-many-classes-download
+  namespace: default
+spec:
+  entrypoint: segmentation-many-classes-download
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202011091504
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta
+      - name: output_bucket
+        value: rsi-operator
+      - name: accesskey
+        value: EY10QIYRK26F4CL0EY60
+      - name: secretkey
+        value: noYU7VQHMCojxX8ziuF04bAOMBUhKUKr79FcwyOQ
+      - name: endpoint
+        value: '10.4.1.110:7480'
+      - name: inner_endpoint
+        value: '10.4.1.110:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: input_file
+        value: /mnt/cephfs/rsi/data/Test/mlm/buildings/buildings
+      - name: input_file_name
+        value: segmentation_out_name.shp
+      - name: classes
+        value: '3,10,8'
+  onExit: ''
+  templates:
+    - name: segmentation-many-classes-download
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_file
+          - name: input_file_name
+          - name: classes
+        artifacts: []
+      dag:
+        tasks:
+          - name: segmentation-classes-un1l
+            template: topo-1653629263268
+            key: topo-1653629263268
+            arguments:
+              parameters:
+                - name: task
+                  value: '3'
+                - name: inputDir
+                  value: '{{inputs.parameters.input_file}}'
+                - name: fileName
+                  value: '{{inputs.parameters.input_file_name}}'
+                - name: outputDir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/
+                - name: classes
+                  value: '{{inputs.parameters.classes}}'
+                - name: operatorCode
+                  value: segmentationCompress
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+            dependencies: []
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1653629263268
+      inputs:
+        parameters:
+          - name: task
+          - name: inputDir
+          - name: fileName
+          - name: outputDir
+          - name: classes
+          - name: operatorCode
+          - name: tenantId
+          - name: execCode
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 16
+          requests:
+            memory: 16Gi
+            cpu: 16
+        args: [' java -jar /opt/potato-algo-adapter.jar --task={{inputs.parameters.task}} --inputDir={{inputs.parameters.inputDir}} --fileName={{inputs.parameters.fileName}} --outputDir={{inputs.parameters.outputDir}} --classes={{inputs.parameters.classes}} --operatorCode={{inputs.parameters.operatorCode}} --tenantId={{inputs.parameters.tenantId}} --execCode={{inputs.parameters.execCode}} --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml --s3.protocol={{workflow.parameters.protocol}} --s3.ak={{workflow.parameters.accesskey}} --s3.sk={{workflow.parameters.secretkey}} --s3.bucket={{workflow.parameters.output_bucket}} --s3.endpoint={{workflow.parameters.endpoint}} --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}']
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi
+    - name: cache
+      emptyDir:
+        medium: Memory
+        sizeLimit: 65536Mi

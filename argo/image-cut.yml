@@ -1,0 +1,745 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: rsimage-cut
+  namespace: default
+spec:
+  entrypoint: rsimage-cut
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012345678
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: vector_polygons
+        value: >-
+          Polygon ((117.23594610095990731  117.29135166681329849
+          35.16737362274411538, 117.23594610095990731 35.38899588615769431))
+      - name: input_file
+        value: /mnt/cephfs/rsi/data/1/RSI202010101715/rsImageCut/608834/subset1.tif
+      - name: output_file
+        value: >-
+          /mnt/cephfs/rsi/result/1/RSI202010101715/rsImageCut/608834/subset1.tif
+      - name: transformation_file
+        value: >-
+          /mnt/cephfs/rsi/result/1/RSI202010101715/rsImageCutTransformation/608834/subset1.tif
+      - name: gdal2tiles_path
+        value: /mnt/cephfs/rsi/result/1/RSI202010101715/rsImageCut2tiles/608834/
+      - name: buildtiler_path
+        value: /mnt/cephfs/rsi/result/1/RSI202010101715/rsImageCutTiler/608834/
+      - name: thumbnail_file
+        value: >-
+          /mnt/cephfs/rsi/result/1/RSI202010101715/rsImageCutThumbnail/608834/subset1.PNG
+      - name: is_wkt
+        value: 0
+      - name: is_byfeature
+        value: 0
+      - name: zoom
+        value: 1-15
+      - name: terrain
+        value: false
+  onExit: ''
+  templates:
+    - name: rsimage-cut
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: vector_polygons
+          - name: input_file
+          - name: output_file
+          - name: transformation_file
+          - name: gdal2tiles_path
+          - name: buildtiler_path
+          - name: thumbnail_file
+          - name: is_wkt
+          - name: is_byfeature
+          - name: zoom
+          - name: terrain
+        artifacts: []
+      dag:
+        tasks:
+          - name: gdal2titles-owam
+            template: topo-1610695884662
+            key: topo-1610695884662
+            arguments:
+              parameters:
+                - name: operatorCode
+                  value: gdal2tiles
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: sourceFilePath
+                  value: '{{inputs.parameters.output_file}}'
+                - name: targetDirPath
+                  value: '{{inputs.parameters.gdal2tiles_path}}'
+                - name: zoom
+                  value: '{{inputs.parameters.zoom}}'
+                - name: w
+                  value: google
+                - name: operatorCodeAlias
+                  value: rsImageCut-tiles
+            when: '{{inputs.parameters.terrain}}==true'
+            dependencies:
+              - image-cut-xa92
+          - name: thumbnail-s4sx
+            template: topo-1610695890212
+            key: topo-1610695890212
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: tdgisAnalysis
+                - name: inputPath
+                  value: '{{inputs.parameters.output_file}}'
+                - name: outputPath
+                  value: '{{inputs.parameters.thumbnail_file}}'
+                - name: appName
+                  value: at_raster_thumbnail
+                - name: operatorCodeAlias
+                  value: rsImageCut-analysis
+            dependencies:
+              - image-cut-xa92
+          - name: image-area-2e7d
+            template: topo-1610700586334
+            key: topo-1610700586334
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: imageArea
+                - name: inputPath
+                  value: '{{inputs.parameters.transformation_file}}'
+                - name: outputPath
+                  value: /opt/data/area.txt
+                - name: appName
+                  value: td_image_area_get
+                - name: operatorCodeAlias
+                  value: rsImageCut-area
+            when: '"{{tasks.get-target-crs-bknd.outputs.parameters.crs}}"!=NULL'
+            dependencies:
+              - get-target-crs-bknd
+              - transformation-qy45
+          - name: transformation-qy45
+            template: topo-1612018337560
+            key: topo-1612018337560
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: transformation
+                - name: srcFile
+                  value: '{{inputs.parameters.output_file}}'
+                - name: dstFile
+                  value: '{{inputs.parameters.transformation_file}}'
+                - name: appName
+                  value: td_coordinate_transformation
+                - name: resampleMode
+                  value: '1'
+                - name: dstSrs
+                  value: '"{{tasks.get-target-crs-bknd.outputs.parameters.crs}}"'
+                - name: operatorCodeAlias
+                  value: rsImageCut-transformation
+            when: '"{{tasks.get-target-crs-bknd.outputs.parameters.crs}}"!=NULL'
+            dependencies:
+              - get-target-crs-bknd
+          - name: build-tiler-nwq1
+            template: topo-1612019330691
+            key: topo-1612019330691
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: buildTiler
+                - name: srcFile
+                  value: '{{inputs.parameters.output_file}}'
+                - name: outputDir
+                  value: '{{inputs.parameters.buildtiler_path}}'
+                - name: appName
+                  value: td_build_tiler
+                - name: resampleMode
+                  value: nearest
+                - name: maxZoom
+                  value: '14'
+                - name: outputFormat
+                  value: Mesh
+                - name: beZip
+                  value: '1'
+                - name: threadCount
+                  value: '4'
+                - name: operatorCodeAlias
+                  value: rsImageCut-terrain
+            when: '{{inputs.parameters.terrain}}==true'
+            dependencies:
+              - image-cut-xa92
+          - name: gdal2titles-ipwt
+            template: topo-1612514302161
+            key: topo-1612514302161
+            arguments:
+              parameters:
+                - name: operatorCode
+                  value: gdal2tiles
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: sourceFilePath
+                  value: '{{inputs.parameters.output_file}}'
+                - name: targetDirPath
+                  value: '{{inputs.parameters.gdal2tiles_path}}'
+                - name: zoom
+                  value: '{{inputs.parameters.zoom}}'
+                - name: w
+                  value: google
+                - name: operatorCodeAlias
+                  value: rsImageCut-tiles
+            when: '{{inputs.parameters.terrain}}==false'
+            dependencies:
+              - image-cut-xa92
+          - name: image-cut-xa92
+            template: topo-1625816832257
+            key: topo-1625816832257
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: imageCut
+                - name: srcRaster
+                  value: '{{inputs.parameters.input_file}}'
+                - name: dstRaster
+                  value: '{{inputs.parameters.output_file}}'
+                - name: appName
+                  value: td_raster_cut_analysis
+                - name: vectorPolygons
+                  value: '{{inputs.parameters.vector_polygons}}'
+                - name: isWkt
+                  value: '{{inputs.parameters.is_wkt}}'
+                - name: isByFeature
+                  value: '{{inputs.parameters.is_byfeature}}'
+                - name: satelliteShp
+                  value: '0'
+                - name: operatorCodeAlias
+                  value: rsImageCut
+            dependencies: []
+          - name: get-target-crs-bknd
+            template: topo-1628069284485
+            key: topo-1628069284485
+            arguments:
+              parameters:
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: input_raster
+                  value: '{{inputs.parameters.output_file}}'
+                - name: output_file
+                  value: /tmp/crs.txt
+            dependencies:
+              - image-cut-xa92
+          - name: image-area-y4yh
+            template: topo-1628069313164
+            key: topo-1628069313164
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: imageArea
+                - name: inputPath
+                  value: '{{inputs.parameters.output_file}}'
+                - name: outputPath
+                  value: /opt/data/area.txt
+                - name: appName
+                  value: td_image_area_get
+            when: '"{{tasks.get-target-crs-bknd.outputs.parameters.crs}}"==NULL'
+            dependencies:
+              - get-target-crs-bknd
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1610695884662
+      inputs:
+        parameters:
+          - name: operatorCode
+          - name: execCode
+          - name: tenantId
+          - name: sourceFilePath
+          - name: targetDirPath
+          - name: zoom
+          - name: w
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --execCode={{inputs.parameters.execCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --sourceFilePath={{inputs.parameters.sourceFilePath}}
+            --targetDirPath={{inputs.parameters.targetDirPath}}
+            --zoom={{inputs.parameters.zoom}} --w={{inputs.parameters.w}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1610695890212
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputPath
+          - name: outputPath
+          - name: appName
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputPath={{inputs.parameters.inputPath}}
+            --outputPath={{inputs.parameters.outputPath}}
+            --appName={{inputs.parameters.appName}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1610700586334
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputPath
+          - name: outputPath
+          - name: appName
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputPath={{inputs.parameters.inputPath}}
+            --outputPath={{inputs.parameters.outputPath}}
+            --appName={{inputs.parameters.appName}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1612018337560
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: srcFile
+          - name: dstFile
+          - name: appName
+          - name: resampleMode
+          - name: dstSrs
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --srcFile={{inputs.parameters.srcFile}}
+            --dstFile={{inputs.parameters.dstFile}}
+            --appName={{inputs.parameters.appName}}
+            --resampleMode={{inputs.parameters.resampleMode}}
+            --dstSrs={{inputs.parameters.dstSrs}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1612019330691
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: srcFile
+          - name: outputDir
+          - name: appName
+          - name: resampleMode
+          - name: maxZoom
+          - name: outputFormat
+          - name: beZip
+          - name: threadCount
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --srcFile={{inputs.parameters.srcFile}}
+            --outputDir={{inputs.parameters.outputDir}}
+            --appName={{inputs.parameters.appName}}
+            --resampleMode={{inputs.parameters.resampleMode}}
+            --maxZoom={{inputs.parameters.maxZoom}}
+            --outputFormat={{inputs.parameters.outputFormat}}
+            --beZip={{inputs.parameters.beZip}}
+            --threadCount={{inputs.parameters.threadCount}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1612514302161
+      inputs:
+        parameters:
+          - name: operatorCode
+          - name: execCode
+          - name: tenantId
+          - name: sourceFilePath
+          - name: targetDirPath
+          - name: zoom
+          - name: w
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --execCode={{inputs.parameters.execCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --sourceFilePath={{inputs.parameters.sourceFilePath}}
+            --targetDirPath={{inputs.parameters.targetDirPath}}
+            --zoom={{inputs.parameters.zoom}} --w={{inputs.parameters.w}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1625816832257
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: srcRaster
+          - name: dstRaster
+          - name: appName
+          - name: vectorPolygons
+          - name: isWkt
+          - name: isByFeature
+          - name: satelliteShp
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        imagePullPolicy: Always
+        command:
+          - sh
+          - '-c'
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --srcRaster={{inputs.parameters.srcRaster}}
+            --dstRaster={{inputs.parameters.dstRaster}}
+            --appName={{inputs.parameters.appName}}
+            --vectorPolygons={{inputs.parameters.vectorPolygons}}
+            --isWkt={{inputs.parameters.isWkt}}
+            --isByFeature={{inputs.parameters.isByFeature}}
+            --satelliteShp={{inputs.parameters.satelliteShp}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1628069284485
+      inputs:
+        parameters:
+          - name: execCode
+          - name: tenantId
+          - name: input_raster
+          - name: output_file
+      outputs:
+        parameters:
+          - name: crs
+            valueFrom:
+              path: /tmp/crs.txt
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python /opt/get_target_crs_cmd.py
+            --input_raster={{inputs.parameters.input_raster}}
+            --output_file={{inputs.parameters.output_file}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1628069313164
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputPath
+          - name: outputPath
+          - name: appName
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputPath={{inputs.parameters.inputPath}}
+            --outputPath={{inputs.parameters.outputPath}}
+            --appName={{inputs.parameters.appName}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'

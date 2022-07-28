@@ -36,7 +36,7 @@ spec:
       - name: env
         value: private
       - name: input_path
-        value: /mnt/cephfs/rsi/result/1/RSI20220621/DOM/outbyte/kongsan_result
+        value: /mnt/cephfs/rsi/result/1/RSI20220209/DOM/outbyte/kongsan_result
       - name: output_path
         value: /mnt/cephfs/rsi/data/mlm/result/dom/
       - name: dodging_std_file
@@ -44,7 +44,7 @@ spec:
       - name: chunk_size
         value: 512
       - name: processing_method
-        value: 3
+        value: 4
       - name: is_single_color
         value: 0
       - name: single_color_coef
@@ -79,6 +79,10 @@ spec:
         value: 1
       - name: dehaze_coef
         value: 0.95
+      - name: use_dodging_template_lib
+        value: 1
+      - name: dodging_template_lib_dir
+        value: /opt/linux64/dodgingTemplate/china16_1/
   onExit: ''
   templates:
     - name: dodging-batch-new
@@ -121,6 +125,8 @@ spec:
           - name: sharpen
           - name: dehaze
           - name: dehaze_coef
+          - name: use_dodging_template_lib
+          - name: dodging_template_lib_dir
         artifacts: []
       dag:
         tasks:
@@ -186,9 +192,9 @@ spec:
                 - name: dehaze_coef
                   value: '{{inputs.parameters.dehaze_coef}}'
                 - name: use_dodging_template_lib
-                  value: '0'
+                  value: '{{inputs.parameters.use_dodging_template_lib}}'
                 - name: dodging_template_lib_dir
-                  value: /etc/dodgingTemplate/china150/
+                  value: '{{inputs.parameters.dodging_template_lib_dir}}'
                 - name: min_coef
                   value: '0.25'
                 - name: max_coef

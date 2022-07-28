@@ -1,0 +1,300 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dsm-autflow
+  namespace: default
+spec:
+  entrypoint: dsm-autflow
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: tenant_id
+        value: 1
+      - name: exec_code
+        value: RSI202201010101
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private
+      - name: img_path
+        value: >-
+          /mnt/cephfs/rsi/data/Test/mlm/DSM/ZY3/ZY3_E116.3_N40.2_20170708_L1A0003851389
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/DSM/result/dsmautflow
+      - name: dsm_srs
+        value: >-
+          GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS
+          84",6378137,298.2572235630016,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]]
+      - name: block_unit
+        value: '2'
+      - name: hei
+        value: '12000'
+      - name: wid
+        value: '12000'
+      - name: block_rows
+        value: '2048'
+      - name: block_cols
+        value: '2048'
+      - name: is_gj
+        value: 'false'
+  onExit: ''
+  templates:
+    - name: dsm-autflow
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: tenant_id
+          - name: exec_code
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: img_path
+          - name: output_path
+          - name: dsm_srs
+          - name: block_unit
+          - name: hei
+          - name: wid
+          - name: block_rows
+          - name: block_cols
+          - name: is_gj
+        artifacts: []
+      dag:
+        tasks:
+          - name: dsm-rule-7v5v
+            template: topo-1604546844568
+            key: topo-1604546844568
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.img_path}}'
+                - name: output_file
+                  value: /tmp/dsm_parallel.json
+                - name: is_gj
+                  value: '{{inputs.parameters.is_gj}}'
+            dependencies: []
+          - name: dense-matching-4u4a
+            template: topo-1646716891948
+            key: topo-1646716891948
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: denseMatching
+                - name: stereoModelType
+                  value: Satellite_RPC
+                - name: rotateMode
+                  value: '0'
+                - name: leftImagePath
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq '.[{{item}}].fwd_file'|
+                    sed 's/\"//g'`
+                - name: nadirImagePath
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq '.[{{item}}].nad_file'|
+                    sed 's/\"//g'`
+                - name: rightImagePath
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq '.[{{item}}].bwd_file'|
+                    sed 's/\"//g'`
+                - name: dsmFileName
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq '.[{{item}}].dsm_file'|
+                    sed 's/\"//g'`
+                - name: row0
+                  value: '0'
+                - name: col0
+                  value: '0'
+                - name: hei
+                  value: '{{inputs.parameters.hei}}'
+                - name: wid
+                  value: '{{inputs.parameters.wid}}'
+                - name: meanZ
+                  value: '0'
+                - name: blockRows
+                  value: '{{inputs.parameters.block_rows}}'
+                - name: blockCols
+                  value: '{{inputs.parameters.block_cols}}'
+                - name: overlapRows
+                  value: '128'
+                - name: overlapCols
+                  value: '128'
+                - name: blockUnit
+                  value: '{{inputs.parameters.block_unit}}'
+                - name: dsmSRS
+                  value: '{{inputs.parameters.dsm_srs}}'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dsm-rule-7v5v.outputs.artifacts.items}}'
+            dependencies:
+              - dsm-rule-7v5v
+            withSequence:
+              count: '{{tasks.dsm-rule-7v5v.outputs.parameters.count}}'
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1604546844568
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: is_gj
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            python /opt/rsi/process/dsm_rule1-autflow.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --is_gj={{inputs.parameters.is_gj}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1646716891948
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: stereoModelType
+          - name: rotateMode
+          - name: leftImagePath
+          - name: nadirImagePath
+          - name: rightImagePath
+          - name: dsmFileName
+          - name: row0
+          - name: col0
+          - name: hei
+          - name: wid
+          - name: meanZ
+          - name: blockRows
+          - name: blockCols
+          - name: overlapRows
+          - name: overlapCols
+          - name: blockUnit
+          - name: dsmSRS
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 32Gi
+            cpu: 16
+          requests:
+            memory: 32Gi
+            cpu: 16
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --stereoModelType={{inputs.parameters.stereoModelType}}
+            --rotateMode={{inputs.parameters.rotateMode}}
+            --leftImagePath={{inputs.parameters.leftImagePath}}
+            --nadirImagePath={{inputs.parameters.nadirImagePath}}
+            --rightImagePath={{inputs.parameters.rightImagePath}}
+            --dsmFileName={{inputs.parameters.dsmFileName}}
+            --row0={{inputs.parameters.row0}} --col0={{inputs.parameters.col0}}
+            --hei={{inputs.parameters.hei}} --wid={{inputs.parameters.wid}}
+            --meanZ={{inputs.parameters.meanZ}}
+            --blockRows={{inputs.parameters.blockRows}}
+            --blockCols={{inputs.parameters.blockCols}}
+            --overlapRows={{inputs.parameters.overlapRows}}
+            --overlapCols={{inputs.parameters.overlapCols}}
+            --blockUnit={{inputs.parameters.blockUnit}}
+            --dsmSRS={{inputs.parameters.dsmSRS}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi

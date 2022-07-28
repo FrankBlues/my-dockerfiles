@@ -1,0 +1,431 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: dsm-filter
+  namespace: default
+spec:
+  entrypoint: dsm-filter
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: tenant_id
+        value: 1
+      - name: exec_code
+        value: RSI202201010101
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private
+      - name: img_path
+        value: /mnt/cephfs/rsi/data/mlm/DSM/result/refine
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/mlm/DSM/result/filter
+      - name: is_gj
+        value: 'false'
+  onExit: ''
+  templates:
+    - name: dsm-filter
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: tenant_id
+          - name: exec_code
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: img_path
+          - name: output_path
+          - name: is_gj
+        artifacts: []
+      dag:
+        tasks:
+          - name: dsm-rule-7v5v
+            template: topo-1604546844568
+            key: topo-1604546844568
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.img_path}}'
+                - name: output_file
+                  value: /tmp/dsm_parallel.json
+                - name: is_gj
+                  value: '{{inputs.parameters.is_gj}}'
+            dependencies: []
+          - name: filtering-7s0p
+            template: topo-1642585512214
+            key: topo-1642585512214
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: filtering
+                - name: inputImageFile
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].dsmbos_file'| sed 's/\"//g'`
+                - name: outputImageFile
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].filter_file'| sed 's/\"//g'`
+                - name: fileterType
+                  value: '5'
+                - name: meanKernelWidth
+                  value: '3'
+                - name: meanKernelHeight
+                  value: '3'
+                - name: medianKernelWidth
+                  value: '3'
+                - name: medianKernelHeight
+                  value: '3'
+                - name: gaussKernelSize
+                  value: '5'
+                - name: gaussKernelSigma
+                  value: '1.4'
+                - name: bilateralKernelWidth
+                  value: '11'
+                - name: bilateralRangeSigma
+                  value: '9'
+                - name: bilateralSpatialSigma
+                  value: '3'
+                - name: noiseStandardDeviation
+                  value: '10'
+                - name: searchWindowSize
+                  value: '11'
+                - name: similarityWindowSize
+                  value: '3'
+                - name: averagenWgtFlag
+                  value: '0'
+                - name: averagenFilterWidX
+                  value: '5'
+                - name: averagenFilterWidY
+                  value: '5'
+              artifacts:
+                - name: items
+                  from: '{{tasks.dsm-rule-7v5v.outputs.artifacts.items}}'
+            dependencies:
+              - dsm-rule-7v5v
+            withSequence:
+              count: '{{tasks.dsm-rule-7v5v.outputs.parameters.count}}'
+          - name: thumbnail-8pt0
+            template: topo-1644918573630
+            key: topo-1644918573630
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: tdgisAnalysis
+                - name: inputPath
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].filter_file'| sed 's/\"//g'`
+                - name: outputPath
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].dsm_filter_thumbnail'| sed 's/\"//g'`
+                - name: appName
+                  value: at_raster_thumbnail
+                - name: operatorCodeAlias
+                  value: filtering-analysis
+              artifacts:
+                - name: items
+                  from: '{{tasks.dsm-rule-7v5v.outputs.artifacts.items}}'
+            dependencies:
+              - filtering-7s0p
+            withSequence:
+              count: '{{tasks.dsm-rule-7v5v.outputs.parameters.count}}'
+          - name: create-pyamid-s2i1
+            template: topo-1656311481076
+            key: topo-1656311481076
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: createPyammid
+                - name: inputImageFilePath
+                  value: >-
+                    `cat /tmp/dsm_parallel.json | jq
+                    '.[{{item}}].filter_file'| sed 's/\"//g'`
+                - name: resampleMethod
+                  value: NEAREST
+              artifacts:
+                - name: items
+                  from: '{{tasks.dsm-rule-7v5v.outputs.artifacts.items}}'
+            dependencies:
+              - thumbnail-8pt0
+            withSequence:
+              count: '{{tasks.dsm-rule-7v5v.outputs.parameters.count}}'
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1604546844568
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: is_gj
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            python /opt/rsi/process/dsm_rule1-filter.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --is_gj={{inputs.parameters.is_gj}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1642585512214
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputImageFile
+          - name: outputImageFile
+          - name: fileterType
+          - name: meanKernelWidth
+          - name: meanKernelHeight
+          - name: medianKernelWidth
+          - name: medianKernelHeight
+          - name: gaussKernelSize
+          - name: gaussKernelSigma
+          - name: bilateralKernelWidth
+          - name: bilateralRangeSigma
+          - name: bilateralSpatialSigma
+          - name: noiseStandardDeviation
+          - name: searchWindowSize
+          - name: similarityWindowSize
+          - name: averagenWgtFlag
+          - name: averagenFilterWidX
+          - name: averagenFilterWidY
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputImageFile={{inputs.parameters.inputImageFile}}
+            --outputImageFile={{inputs.parameters.outputImageFile}}
+            --fileterType={{inputs.parameters.fileterType}}
+            --meanKernelWidth={{inputs.parameters.meanKernelWidth}}
+            --meanKernelHeight={{inputs.parameters.meanKernelHeight}}
+            --medianKernelWidth={{inputs.parameters.medianKernelWidth}}
+            --medianKernelHeight={{inputs.parameters.medianKernelHeight}}
+            --gaussKernelSize={{inputs.parameters.gaussKernelSize}}
+            --gaussKernelSigma={{inputs.parameters.gaussKernelSigma}}
+            --bilateralKernelWidth={{inputs.parameters.bilateralKernelWidth}}
+            --bilateralRangeSigma={{inputs.parameters.bilateralRangeSigma}}
+            --bilateralSpatialSigma={{inputs.parameters.bilateralSpatialSigma}}
+            --noiseStandardDeviation={{inputs.parameters.noiseStandardDeviation}}
+            --searchWindowSize={{inputs.parameters.searchWindowSize}}
+            --similarityWindowSize={{inputs.parameters.similarityWindowSize}}
+            --averagenWgtFlag={{inputs.parameters.averagenWgtFlag}}
+            --averagenFilterWidX={{inputs.parameters.averagenFilterWidX}}
+            --averagenFilterWidY={{inputs.parameters.averagenFilterWidY}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1644918573630
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputPath
+          - name: outputPath
+          - name: appName
+          - name: operatorCodeAlias
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputPath={{inputs.parameters.inputPath}}
+            --outputPath={{inputs.parameters.outputPath}}
+            --appName={{inputs.parameters.appName}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1656311481076
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputImageFilePath
+          - name: resampleMethod
+        artifacts:
+          - name: items
+            path: /tmp/dsm_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputImageFilePath={{inputs.parameters.inputImageFilePath}}
+            --resampleMethod={{inputs.parameters.resampleMethod}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi

@@ -1,0 +1,873 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: segmentation-many-classes
+  namespace: default
+spec:
+  entrypoint: segmentation-many-classes
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202011091504
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta
+      - name: output_bucket
+        value: rsi-operator
+      - name: accesskey
+        value: EY10QIYRK26F4CL0EY60
+      - name: secretkey
+        value: noYU7VQHMCojxX8ziuF04bAOMBUhKUKr79FcwyOQ
+      - name: endpoint
+        value: '10.4.1.110:7480'
+      - name: inner_endpoint
+        value: '10.4.1.110:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: input_file
+        value: /mnt/cephfs/rsi/data/mlm/buildings/xian_18_google841.tif
+      - name: input_file_name
+        value: xian_18_google841
+      - name: polygons
+        value: >-
+          {"polygons":["Polygon  ((109.32975544136819224 36.87558433361900256,
+          109.32911483438830658 36.8712948549469246, 109.33904298770303853
+          36.87057680911991753, 109.33833636175545223 36.87695390820218933,
+          109.32975544136819224 36.87558433361900256))"]}
+      - name: cut_flag
+        value: 'false'
+      - name: group_by_region
+        value: 'false'
+      - name: xzq_file
+        value: /mnt/cephfs/rsi/shapefile/province/province.shp
+      - name: xzq_field
+        value: PROVINCEC
+      - name: cut_by_shp
+        value: '0'
+      - name: classes
+        value: '3,10,8'
+  onExit: ''
+  templates:
+    - name: segmentation-many-classes
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_file
+          - name: input_file_name
+          - name: polygons
+          - name: cut_flag
+          - name: group_by_region
+          - name: xzq_file
+          - name: xzq_field
+          - name: cut_by_shp
+          - name: classes
+        artifacts: []
+      dag:
+        tasks:
+          - name: rsimage-cut-bfuk
+            template: topo-1628142581847
+            key: topo-1628142581847
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: rsImageCut
+                - name: srcRaster
+                  value: '{{inputs.parameters.input_file}}'
+                - name: dstRaster
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/clip/`basename
+                    {{inputs.parameters.input_file}}`
+                - name: appName
+                  value: td_raster_cut_analysis
+                - name: vectorPolygons
+                  value: '{{inputs.parameters.polygons}}'
+                - name: isWkt
+                  value: '{{inputs.parameters.cut_by_shp}}'
+                - name: isByFeature
+                  value: '0'
+                - name: operatorCodeAlias
+                  value: change-detection-rsimagecut
+            when: '{{inputs.parameters.cut_flag}}==true'
+            dependencies: []
+          - name: center-point-to-shpfile-fhpr
+            template: topo-1649847617373
+            key: topo-1649847617373
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: createShpByCenterPoint
+                - name: inputFile
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/{{inputs.parameters.input_file_name}}.shp
+                - name: xzqField
+                  value: '{{inputs.parameters.xzq_field}}'
+                - name: outputPath
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/result/xzq_result
+                - name: threadNum
+                  value: '10'
+                - name: isCreateDir
+                  value: '1'
+                - name: xzqFile
+                  value: '{{inputs.parameters.xzq_file}}'
+            when: '{{inputs.parameters.group_by_region}}==true'
+            dependencies:
+              - segmentation-classes-un1l
+              - segmentation-classes-pu22
+          - name: segmentation-task-id-rule-axso
+            template: topo-1653534220354
+            key: topo-1653534220354
+            arguments:
+              parameters:
+                - name: output_file
+                  value: /tmp/task_id.json
+            dependencies: []
+          - name: segmentation-classes-un1l
+            template: topo-1653629263268
+            key: topo-1653629263268
+            arguments:
+              parameters:
+                - name: task
+                  value: '2'
+                - name: inputDir
+                  value: '{{inputs.parameters.input_file}}'
+                - name: fileName
+                  value: '{{inputs.parameters.input_file_name}}'
+                - name: outputDir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/
+                - name: classes
+                  value: '{{inputs.parameters.classes}}'
+                - name: operatorCode
+                  value: segmentation
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+            when: '{{inputs.parameters.cut_flag}}==false'
+            dependencies:
+              - segmentation-classes-lxey
+              - segmentation-classes-dir-0shp
+          - name: segmentation-classes-pu22
+            template: topo-1653641114188
+            key: topo-1653641114188
+            arguments:
+              parameters:
+                - name: task
+                  value: '2'
+                - name: inputDir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/clip/`basename
+                    {{inputs.parameters.input_file}}`
+                - name: fileName
+                  value: '{{inputs.parameters.input_file_name}}'
+                - name: outputDir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/
+                - name: classes
+                  value: '{{inputs.parameters.classes}}'
+                - name: operatorCode
+                  value: segmentation
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+            when: '{{inputs.parameters.cut_flag}}==true'
+            dependencies:
+              - segmentation-classes-lfp4
+              - segmentation-classes-dir-pc0l
+          - name: ogr2ogr-basic-18w9
+            template: topo-1658200682489
+            key: topo-1658200682489
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/result.shp
+                - name: output_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/geojson/{{inputs.parameters.input_file_name}}.json
+            dependencies:
+              - add-center-point-opns
+          - name: json-path-message-ty8o
+            template: topo-1658200689282
+            key: topo-1658200689282
+            arguments:
+              parameters:
+                - name: jsonFilePath
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/geojson/{{inputs.parameters.input_file_name}}.json
+                - name: operatorCode
+                  value: shp2geojson
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+            dependencies:
+              - ogr2ogr-basic-18w9
+          - name: segmentation-classes-lfp4
+            template: topo-1658288081041
+            key: topo-1658288081041
+            arguments:
+              parameters:
+                - name: task
+                  value: '{{item.task_id}}'
+                - name: inputDir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/clip/`basename
+                    {{inputs.parameters.input_file}}`
+                - name: fileName
+                  value: '{{inputs.parameters.input_file_name}}'
+                - name: outputDir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/
+                - name: classes
+                  value: '{{inputs.parameters.classes}}'
+                - name: operatorCode
+                  value: segmentation
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+            when: '{{inputs.parameters.cut_flag}}==java'
+            dependencies:
+              - rsimage-cut-bfuk
+              - segmentation-task-id-rule-axso
+            withParam: >-
+              {{tasks.segmentation-task-id-rule-axso.outputs.parameters.task_id}}
+          - name: segmentation-classes-lxey
+            template: topo-1658288125544
+            key: topo-1658288125544
+            arguments:
+              parameters:
+                - name: task
+                  value: '{{item.task_id}}'
+                - name: inputDir
+                  value: '{{inputs.parameters.input_file}}'
+                - name: fileName
+                  value: '{{inputs.parameters.input_file_name}}'
+                - name: outputDir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/
+                - name: classes
+                  value: '{{inputs.parameters.classes}}'
+                - name: operatorCode
+                  value: segmentation
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+            when: '{{inputs.parameters.cut_flag}}==java'
+            dependencies:
+              - segmentation-task-id-rule-axso
+            withParam: >-
+              {{tasks.segmentation-task-id-rule-axso.outputs.parameters.task_id}}
+          - name: add-center-point-ocx8
+            template: topo-1658295989733
+            key: topo-1658295989733
+            arguments:
+              parameters:
+                - name: appname
+                  value: td_add_center_point_and_2geojson
+                - name: shp_path
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/{{inputs.parameters.input_file_name}}.shp
+                - name: function_id
+                  value: '1'
+                - name: group_shp
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/group_shp/{{inputs.parameters.exec_code}}.shp
+                - name: feature_num
+                  value: '500'
+            dependencies:
+              - segmentation-classes-pu22
+              - segmentation-classes-un1l
+          - name: add-center-point-opns
+            template: topo-1658295994522
+            key: topo-1658295994522
+            arguments:
+              parameters:
+                - name: appname
+                  value: td_add_center_point_and_2geojson
+                - name: shp_path
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/{{inputs.parameters.input_file_name}}.shp
+                - name: function_id
+                  value: '2'
+                - name: feature_num
+                  value: '500'
+            dependencies:
+              - add-center-point-ocx8
+          - name: segmentation-classes-dir-0shp
+            template: topo-1658298839417
+            key: topo-1658298839417
+            arguments:
+              parameters:
+                - name: task
+                  value: '{{item.task_id}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_file}}'
+                - name: filename
+                  value: '{{inputs.parameters.input_file_name}}'
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/
+                - name: classes
+                  value: '{{inputs.parameters.classes}}'
+            when: '{{inputs.parameters.cut_flag}}==false'
+            dependencies:
+              - segmentation-task-id-rule-axso
+            withParam: >-
+              {{tasks.segmentation-task-id-rule-axso.outputs.parameters.task_id}}
+          - name: segmentation-classes-dir-pc0l
+            template: topo-1658298868504
+            key: topo-1658298868504
+            arguments:
+              parameters:
+                - name: task
+                  value: '{{item.task_id}}'
+                - name: input_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/clip/`basename
+                    {{inputs.parameters.input_file}}`
+                - name: filename
+                  value: '{{inputs.parameters.input_file_name}}'
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/seg_out/
+                - name: classes
+                  value: '{{inputs.parameters.classes}}'
+            when: '{{inputs.parameters.cut_flag}}==true'
+            dependencies:
+              - rsimage-cut-bfuk
+              - segmentation-task-id-rule-axso
+            withParam: >-
+              {{tasks.segmentation-task-id-rule-axso.outputs.parameters.task_id}}
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1628142581847
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: srcRaster
+          - name: dstRaster
+          - name: appName
+          - name: vectorPolygons
+          - name: isWkt
+          - name: isByFeature
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --srcRaster={{inputs.parameters.srcRaster}}
+            --dstRaster={{inputs.parameters.dstRaster}}
+            --appName={{inputs.parameters.appName}}
+            --vectorPolygons={{inputs.parameters.vectorPolygons}}
+            --isWkt={{inputs.parameters.isWkt}}
+            --isByFeature={{inputs.parameters.isByFeature}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1649847617373
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputFile
+          - name: xzqField
+          - name: outputPath
+          - name: threadNum
+          - name: isCreateDir
+          - name: xzqFile
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: [' java -jar /opt/potato-algo-adapter.jar --tenantId={{inputs.parameters.tenantId}} --execCode={{inputs.parameters.execCode}} --operatorCode={{inputs.parameters.operatorCode}} --inputFile={{inputs.parameters.inputFile}} --xzqField={{inputs.parameters.xzqField}} --outputPath={{inputs.parameters.outputPath}} --threadNum={{inputs.parameters.threadNum}} --isCreateDir={{inputs.parameters.isCreateDir}} --xzqFile={{inputs.parameters.xzqFile}} --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml --s3.protocol={{workflow.parameters.protocol}} --s3.ak={{workflow.parameters.accesskey}} --s3.sk={{workflow.parameters.secretkey}} --s3.bucket={{workflow.parameters.output_bucket}} --s3.endpoint={{workflow.parameters.endpoint}} --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}']
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1653534220354
+      inputs:
+        parameters:
+          - name: output_file
+      outputs:
+        parameters:
+          - name: task_id
+            valueFrom:
+              path: /tmp/task_id.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python /opt/rsi/process/segmentation_rule.py
+            --output_file={{inputs.parameters.output_file}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1653629263268
+      inputs:
+        parameters:
+          - name: task
+          - name: inputDir
+          - name: fileName
+          - name: outputDir
+          - name: classes
+          - name: operatorCode
+          - name: tenantId
+          - name: execCode
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 16
+          requests:
+            memory: 16Gi
+            cpu: 16
+        args: [' java -jar /opt/potato-algo-adapter.jar --task={{inputs.parameters.task}} --inputDir={{inputs.parameters.inputDir}} --fileName={{inputs.parameters.fileName}} --outputDir={{inputs.parameters.outputDir}} --classes={{inputs.parameters.classes}} --operatorCode={{inputs.parameters.operatorCode}} --tenantId={{inputs.parameters.tenantId}} --execCode={{inputs.parameters.execCode}} --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml --s3.protocol={{workflow.parameters.protocol}} --s3.ak={{workflow.parameters.accesskey}} --s3.sk={{workflow.parameters.secretkey}} --s3.bucket={{workflow.parameters.output_bucket}} --s3.endpoint={{workflow.parameters.endpoint}} --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}']
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1653641114188
+      inputs:
+        parameters:
+          - name: task
+          - name: inputDir
+          - name: fileName
+          - name: outputDir
+          - name: classes
+          - name: operatorCode
+          - name: tenantId
+          - name: execCode
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 16
+          requests:
+            memory: 16Gi
+            cpu: 16
+        args: [' java -jar /opt/potato-algo-adapter.jar --task={{inputs.parameters.task}} --inputDir={{inputs.parameters.inputDir}} --fileName={{inputs.parameters.fileName}} --outputDir={{inputs.parameters.outputDir}} --classes={{inputs.parameters.classes}} --operatorCode={{inputs.parameters.operatorCode}} --tenantId={{inputs.parameters.tenantId}} --execCode={{inputs.parameters.execCode}} --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml --s3.protocol={{workflow.parameters.protocol}} --s3.ak={{workflow.parameters.accesskey}} --s3.sk={{workflow.parameters.secretkey}} --s3.bucket={{workflow.parameters.output_bucket}} --s3.endpoint={{workflow.parameters.endpoint}} --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}']
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1658200682489
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: 
+          - >-
+            mkdir -p `dirname {{inputs.parameters.output_file}}`; ogr2ogr -f
+            GeoJSON {{inputs.parameters.output_file}}
+            {{inputs.parameters.input_file}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1658200689282
+      inputs:
+        parameters:
+          - name: jsonFilePath
+          - name: operatorCode
+          - name: tenantId
+          - name: execCode
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 4Gi
+            cpu: 1
+          requests:
+            memory: 4Gi
+            cpu: 1
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --jsonFilePath={{inputs.parameters.jsonFilePath}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1658288081041
+      inputs:
+        parameters:
+          - name: task
+          - name: inputDir
+          - name: fileName
+          - name: outputDir
+          - name: classes
+          - name: operatorCode
+          - name: tenantId
+          - name: execCode
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+          requests:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+        args: [' java -jar /opt/potato-algo-adapter.jar --task={{inputs.parameters.task}} --inputDir={{inputs.parameters.inputDir}} --fileName={{inputs.parameters.fileName}} --outputDir={{inputs.parameters.outputDir}} --classes={{inputs.parameters.classes}} --operatorCode={{inputs.parameters.operatorCode}} --tenantId={{inputs.parameters.tenantId}} --execCode={{inputs.parameters.execCode}} --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml --s3.protocol={{workflow.parameters.protocol}} --s3.ak={{workflow.parameters.accesskey}} --s3.sk={{workflow.parameters.secretkey}} --s3.bucket={{workflow.parameters.output_bucket}} --s3.endpoint={{workflow.parameters.endpoint}} --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}']
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+          - name: cache
+            mountPath: /dev/shm
+    - name: topo-1658288125544
+      inputs:
+        parameters:
+          - name: task
+          - name: inputDir
+          - name: fileName
+          - name: outputDir
+          - name: classes
+          - name: operatorCode
+          - name: tenantId
+          - name: execCode
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+          requests:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+        args: [' java -jar /opt/potato-algo-adapter.jar --task={{inputs.parameters.task}} --inputDir={{inputs.parameters.inputDir}} --fileName={{inputs.parameters.fileName}} --outputDir={{inputs.parameters.outputDir}} --classes={{inputs.parameters.classes}} --operatorCode={{inputs.parameters.operatorCode}} --tenantId={{inputs.parameters.tenantId}} --execCode={{inputs.parameters.execCode}} --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml --s3.protocol={{workflow.parameters.protocol}} --s3.ak={{workflow.parameters.accesskey}} --s3.sk={{workflow.parameters.secretkey}} --s3.bucket={{workflow.parameters.output_bucket}} --s3.endpoint={{workflow.parameters.endpoint}} --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}']
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+          - name: cache
+            mountPath: /dev/shm
+    - name: topo-1658295989733
+      inputs:
+        parameters:
+          - name: appname
+          - name: shp_path
+          - name: function_id
+          - name: group_shp
+          - name: feature_num
+      container:
+        image: 'registry.private.cloud:30002/datagaea/gis-business:v1.16'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            ./tdgis_analysis -td --appname={{inputs.parameters.appname}}
+            --shp_path={{inputs.parameters.shp_path}}
+            --function_id={{inputs.parameters.function_id}}
+            --group_shp={{inputs.parameters.group_shp}}
+            --feature_num={{inputs.parameters.feature_num}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1658295994522
+      inputs:
+        parameters:
+          - name: appname
+          - name: shp_path
+          - name: function_id
+          - name: feature_num
+      container:
+        image: 'registry.private.cloud:30002/datagaea/gis-business:v1.16'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            ./tdgis_analysis -td --appname={{inputs.parameters.appname}}
+            --shp_path={{inputs.parameters.shp_path}}
+            --function_id={{inputs.parameters.function_id}}
+            --feature_num={{inputs.parameters.feature_num}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1658298839417
+      inputs:
+        parameters:
+          - name: task
+          - name: input_dir
+          - name: filename
+          - name: output_dir
+          - name: classes
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+          requests:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+        args: 
+          - >-
+            python segmentation.py --task={{inputs.parameters.task}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --filename={{inputs.parameters.filename}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --classes={{inputs.parameters.classes}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+          - name: cache
+            mountPath: /dev/shm
+    - name: topo-1658298868504
+      inputs:
+        parameters:
+          - name: task
+          - name: input_dir
+          - name: filename
+          - name: output_dir
+          - name: classes
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+          requests:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+        args: 
+          - >-
+            python segmentation.py --task={{inputs.parameters.task}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --filename={{inputs.parameters.filename}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --classes={{inputs.parameters.classes}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+          - name: cache
+            mountPath: /dev/shm
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi
+    - name: cache
+      emptyDir:
+        medium: Memory
+        sizeLimit: 65536Mi

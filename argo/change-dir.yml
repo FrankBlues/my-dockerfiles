@@ -1,0 +1,448 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: change-detection-new-dir
+  namespace: default
+spec:
+  entrypoint: change-detection-new-dir
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202011091504
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta
+      - name: output_bucket
+        value: rsi-operator
+      - name: accesskey
+        value: EY10QIYRK26F4CL0EY60
+      - name: secretkey
+        value: noYU7VQHMCojxX8ziuF04bAOMBUhKUKr79FcwyOQ
+      - name: endpoint
+        value: '10.4.1.110:7480'
+      - name: inner_endpoint
+        value: '10.4.1.110:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: input_front_file
+        value: /mnt/cephfs/rsi/data/Test/mlm/cd/P_GZ_test15_2005_0101_Level_18.tif
+      - name: out_file_name
+        value: P_GZ_test15_2005_0101_Level_18
+      - name: input_back_file
+        value: /mnt/cephfs/rsi/data/Test/mlm/cd/P_GZ_test15_2015_0202_Level_18.tif
+      - name: group_by_region
+        value: false
+      - name: xzq_file
+        value: /mnt/cephfs/rsi/shapefile/province/province.shp
+      - name: xzq_field
+        value: PROVINCEC
+      - name: change_type
+        value: nature_artificial
+  onExit: ''
+  templates:
+    - name: change-detection-new-dir
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_front_file
+          - name: out_file_name
+          - name: input_back_file
+          - name: group_by_region
+          - name: xzq_file
+          - name: xzq_field
+          - name: change_type
+        artifacts: []
+      dag:
+        tasks:
+          - name: center-point-to-shpfile-fhpr
+            template: topo-1649847617373
+            key: topo-1649847617373
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: createShpByCenterPoint
+                - name: inputFile
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/change_detection/{{inputs.parameters.out_file_name}}.shp
+                - name: xzqField
+                  value: '{{inputs.parameters.xzq_field}}'
+                - name: outputPath
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/result/xzq_result
+                - name: threadNum
+                  value: '10'
+                - name: isCreateDir
+                  value: '1'
+                - name: xzqFile
+                  value: '{{inputs.parameters.xzq_file}}'
+            when: '{{inputs.parameters.group_by_region}}==true'
+            dependencies:
+              - segmentation-changes-npqj
+          - name: segmentation-changes-npqj
+            template: topo-1653702930309
+            key: topo-1653702930309
+            arguments:
+              parameters:
+                - name: task
+                  value: '0'
+                - name: inputADir
+                  value: '{{inputs.parameters.input_front_file}}'
+                - name: fileName
+                  value: '{{inputs.parameters.out_file_name}}.shp'
+                - name: outputDir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/change_detection
+                - name: typeChange
+                  value: '{{inputs.parameters.change_type}}'
+                - name: inputBDir
+                  value: '{{inputs.parameters.input_back_file}}'
+                - name: operatorCode
+                  value: upgradeChange
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+            dependencies: []
+          - name: ogr2ogr-basic-b1fm
+            template: topo-1658201450366
+            key: topo-1658201450366
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/change_detection/result.shp
+                - name: output_file
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/geojson/{{inputs.parameters.out_file_name}}.json
+            dependencies:
+              - add-center-point-z2yz
+          - name: json-path-message-6h58
+            template: topo-1658201456813
+            key: topo-1658201456813
+            arguments:
+              parameters:
+                - name: jsonFilePath
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/geojson/{{inputs.parameters.out_file_name}}.json
+                - name: operatorCode
+                  value: shp2geojson
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+            dependencies:
+              - ogr2ogr-basic-b1fm
+          - name: add-center-point-evtf
+            template: topo-1658302460143
+            key: topo-1658302460143
+            arguments:
+              parameters:
+                - name: appname
+                  value: td_add_center_point_and_2geojson
+                - name: shp_path
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/change_detection/{{inputs.parameters.out_file_name}}.shp
+                - name: function_id
+                  value: '1'
+                - name: group_shp
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/group_shp/{{inputs.parameters.exec_code}}.shp
+                - name: feature_num
+                  value: '500'
+            dependencies:
+              - segmentation-changes-npqj
+          - name: add-center-point-z2yz
+            template: topo-1658302463093
+            key: topo-1658302463093
+            arguments:
+              parameters:
+                - name: appname
+                  value: td_add_center_point_and_2geojson
+                - name: shp_path
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/rsi/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/change_detection/{{inputs.parameters.out_file_name}}.shp
+                - name: function_id
+                  value: '2'
+                - name: feature_num
+                  value: '500'
+            dependencies:
+              - add-center-point-evtf
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1649847617373
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputFile
+          - name: xzqField
+          - name: outputPath
+          - name: threadNum
+          - name: isCreateDir
+          - name: xzqFile
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: [' java -jar /opt/potato-algo-adapter.jar --tenantId={{inputs.parameters.tenantId}} --execCode={{inputs.parameters.execCode}} --operatorCode={{inputs.parameters.operatorCode}} --inputFile={{inputs.parameters.inputFile}} --xzqField={{inputs.parameters.xzqField}} --outputPath={{inputs.parameters.outputPath}} --threadNum={{inputs.parameters.threadNum}} --isCreateDir={{inputs.parameters.isCreateDir}} --xzqFile={{inputs.parameters.xzqFile}} --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml --s3.protocol={{workflow.parameters.protocol}} --s3.ak={{workflow.parameters.accesskey}} --s3.sk={{workflow.parameters.secretkey}} --s3.bucket={{workflow.parameters.output_bucket}} --s3.endpoint={{workflow.parameters.endpoint}} --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}']
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1653702930309
+      inputs:
+        parameters:
+          - name: task
+          - name: inputADir
+          - name: fileName
+          - name: outputDir
+          - name: typeChange
+          - name: inputBDir
+          - name: operatorCode
+          - name: tenantId
+          - name: execCode
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+          requests:
+            memory: 48Gi
+            cpu: 16
+            nvidia.com/gpu: 1
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --task={{inputs.parameters.task}}
+            --inputADir={{inputs.parameters.inputADir}}
+            --fileName={{inputs.parameters.fileName}}
+            --outputDir={{inputs.parameters.outputDir}}
+            --typeChange={{inputs.parameters.typeChange}}
+            --inputBDir={{inputs.parameters.inputBDir}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+          - name: cache
+            mountPath: /dev/shm
+    - name: topo-1658201450366
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: 
+          - >-
+            mkdir -p `dirname {{inputs.parameters.output_file}}`; ogr2ogr -f
+            GeoJSON {{inputs.parameters.output_file}}
+            {{inputs.parameters.input_file}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1658201456813
+      inputs:
+        parameters:
+          - name: jsonFilePath
+          - name: operatorCode
+          - name: tenantId
+          - name: execCode
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-segmentation:v0.8.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 4Gi
+            cpu: 1
+          requests:
+            memory: 4Gi
+            cpu: 1
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --jsonFilePath={{inputs.parameters.jsonFilePath}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1658302460143
+      inputs:
+        parameters:
+          - name: appname
+          - name: shp_path
+          - name: function_id
+          - name: group_shp
+          - name: feature_num
+      container:
+        image: '192.168.0.31:30002/datagaea/gis-business:v1.16'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            ./tdgis_analysis -td --appname={{inputs.parameters.appname}}
+            --shp_path={{inputs.parameters.shp_path}}
+            --function_id={{inputs.parameters.function_id}}
+            --group_shp={{inputs.parameters.group_shp}}
+            --feature_num={{inputs.parameters.feature_num}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1658302463093
+      inputs:
+        parameters:
+          - name: appname
+          - name: shp_path
+          - name: function_id
+          - name: feature_num
+      container:
+        image: '192.168.0.31:30002/datagaea/gis-business:v1.16'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            ./tdgis_analysis -td --appname={{inputs.parameters.appname}}
+            --shp_path={{inputs.parameters.shp_path}}
+            --function_id={{inputs.parameters.function_id}}
+            --feature_num={{inputs.parameters.feature_num}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi
+    - name: cache
+      emptyDir:
+        medium: Memory
+        sizeLimit: 65536Mi

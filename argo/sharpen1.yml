@@ -1,0 +1,299 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: sharpen-batch
+  namespace: default
+spec:
+  entrypoint: sharpen-batch
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012111412
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private
+      - name: input_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/result/dom/dodging
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/result/dom/
+  onExit: ''
+  templates:
+    - name: sharpen-batch
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: output_path
+        artifacts: []
+      dag:
+        tasks:
+          - name: xq-batch-rule-dfjw
+            template: topo-1639638570983
+            key: topo-1639638570983
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/image_parallel.json
+                - name: suffix
+                  value: .tif
+            dependencies: []
+          - name: xq-image-sharpen-p-k3of
+            template: topo-1639646286997
+            key: topo-1639646286997
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].input_file' | sed 's/"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].sharpen_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQImageSharpenCmd.xml
+                - name: sharpen_method
+                  value: '1'
+                - name: sharpen_weight
+                  value: '0.5'
+                - name: sharpen_radius
+                  value: '3'
+                - name: sharpen_threthold
+                  value: '0'
+                - name: create_pyd
+                  value: 'true'
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-dfjw.outputs.artifacts.items}}'
+            dependencies:
+              - xq-batch-rule-dfjw
+            withSequence:
+              count: '{{tasks.xq-batch-rule-dfjw.outputs.parameters.count}}'
+          - name: thumbnail-fmhe
+            template: topo-1644912165573
+            key: topo-1644912165573
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: tdgisAnalysis
+                - name: inputPath
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].sharpen_file'| sed 's/\"//g'`
+                - name: outputPath
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].thumbnail_sharpen'| sed 's/\"//g'`
+                - name: appName
+                  value: at_raster_thumbnail
+                - name: operatorCodeAlias
+                  value: sharpen-analysis
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-dfjw.outputs.artifacts.items}}'
+            dependencies:
+              - xq-image-sharpen-p-k3of
+            withSequence:
+              count: '{{tasks.xq-batch-rule-dfjw.outputs.parameters.count}}'
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1639638570983
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: suffix
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 1
+          requests:
+            memory: 8Gi
+            cpu: 1
+        args: 
+          - >-
+            python3 /opt/rsi/process/xq_batch_rule_multi_source.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --suffix={{inputs.parameters.suffix}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1639646286997
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: sharpen_method
+          - name: sharpen_weight
+          - name: sharpen_radius
+          - name: sharpen_threthold
+          - name: create_pyd
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 8
+          requests:
+            memory: 8Gi
+            cpu: 8
+        args: 
+          - >-
+            python3 /opt/rsi/xq_image_sharpen_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --sharpen_method={{inputs.parameters.sharpen_method}}
+            --sharpen_weight={{inputs.parameters.sharpen_weight}}
+            --sharpen_radius={{inputs.parameters.sharpen_radius}}
+            --sharpen_threthold={{inputs.parameters.sharpen_threthold}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1644912165573
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputPath
+          - name: outputPath
+          - name: appName
+          - name: operatorCodeAlias
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputPath={{inputs.parameters.inputPath}}
+            --outputPath={{inputs.parameters.outputPath}}
+            --appName={{inputs.parameters.appName}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi

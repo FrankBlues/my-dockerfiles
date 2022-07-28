@@ -1,0 +1,392 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: formats-conversion
+  namespace: default
+spec:
+  entrypoint: formats-conversion
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202010101715
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: input_file
+        value: >-
+          /mnt/cephfs/rsi/data/1/RSI202010101715/formatConversion/608834/subset1.tif
+      - name: output_file
+        value: >-
+          /mnt/cephfs/rsi/result/1/RSI202010101715/formatConversion/608834/subset1.img
+      - name: format
+        value: HFA
+      - name: zoom
+        value: 1-15
+      - name: terrain
+        value: false
+      - name: gdal2tiles_path
+        value: /mnt/cephfs/rsi/result/1/RSI202010101715/rsImageCut2tiles/608834/
+      - name: buildtiler_path
+        value: /mnt/cephfs/rsi/result/1/RSI202010101715/rsImageCutTiler/608834/
+  onExit: ''
+  templates:
+    - name: formats-conversion
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_file
+          - name: output_file
+          - name: format
+          - name: zoom
+          - name: terrain
+          - name: gdal2tiles_path
+          - name: buildtiler_path
+        artifacts: []
+      dag:
+        tasks:
+          - name: formats-conversion-x0cv
+            template: topo-1610420753379
+            key: topo-1610420753379
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: formatConversion
+                - name: srcFile
+                  value: '{{inputs.parameters.input_file}}'
+                - name: dstFile
+                  value: '{{inputs.parameters.output_file}}'
+                - name: appName
+                  value: td_raster_formats_conversion
+                - name: format
+                  value: '{{inputs.parameters.format}}'
+            dependencies: []
+          - name: gdal2titles-407j
+            template: topo-1616985881792
+            key: topo-1616985881792
+            arguments:
+              parameters:
+                - name: operatorCode
+                  value: gdal2tiles
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: sourceFilePath
+                  value: '{{inputs.parameters.output_file}}'
+                - name: targetDirPath
+                  value: '{{inputs.parameters.gdal2tiles_path}}'
+                - name: zoom
+                  value: '{{inputs.parameters.zoom}}'
+                - name: w
+                  value: google
+                - name: operatorCodeAlias
+                  value: formats-tiles
+            when: '{{inputs.parameters.terrain}}==false'
+            dependencies:
+              - formats-conversion-x0cv
+          - name: gdal2titles-91hx
+            template: topo-1616985884262
+            key: topo-1616985884262
+            arguments:
+              parameters:
+                - name: operatorCode
+                  value: gdal2tiles
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: sourceFilePath
+                  value: '{{inputs.parameters.output_file}}'
+                - name: targetDirPath
+                  value: '{{inputs.parameters.gdal2tiles_path}}'
+                - name: zoom
+                  value: '{{inputs.parameters.zoom}}'
+                - name: w
+                  value: google
+                - name: operatorCodeAlias
+                  value: formats-tiles
+            when: '{{inputs.parameters.terrain}}==true'
+            dependencies:
+              - formats-conversion-x0cv
+          - name: build-tiler-3np2
+            template: topo-1616985889673
+            key: topo-1616985889673
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: buildTiler
+                - name: srcFile
+                  value: '{{inputs.parameters.output_file}}'
+                - name: outputDir
+                  value: '{{inputs.parameters.buildtiler_path}}'
+                - name: appName
+                  value: td_build_tiler
+                - name: resampleMode
+                  value: nearest
+                - name: maxZoom
+                  value: '14'
+                - name: outputFormat
+                  value: Mesh
+                - name: beZip
+                  value: '1'
+                - name: threadCount
+                  value: '4'
+                - name: operatorCodeAlias
+                  value: formats-terrain
+            when: '{{inputs.parameters.terrain}}==true'
+            dependencies:
+              - formats-conversion-x0cv
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1610420753379
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: srcFile
+          - name: dstFile
+          - name: appName
+          - name: format
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --srcFile={{inputs.parameters.srcFile}}
+            --dstFile={{inputs.parameters.dstFile}}
+            --appName={{inputs.parameters.appName}}
+            --format={{inputs.parameters.format}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1616985881792
+      inputs:
+        parameters:
+          - name: operatorCode
+          - name: execCode
+          - name: tenantId
+          - name: sourceFilePath
+          - name: targetDirPath
+          - name: zoom
+          - name: w
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --execCode={{inputs.parameters.execCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --sourceFilePath={{inputs.parameters.sourceFilePath}}
+            --targetDirPath={{inputs.parameters.targetDirPath}}
+            --zoom={{inputs.parameters.zoom}} --w={{inputs.parameters.w}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1616985884262
+      inputs:
+        parameters:
+          - name: operatorCode
+          - name: execCode
+          - name: tenantId
+          - name: sourceFilePath
+          - name: targetDirPath
+          - name: zoom
+          - name: w
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --execCode={{inputs.parameters.execCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --sourceFilePath={{inputs.parameters.sourceFilePath}}
+            --targetDirPath={{inputs.parameters.targetDirPath}}
+            --zoom={{inputs.parameters.zoom}} --w={{inputs.parameters.w}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1616985889673
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: srcFile
+          - name: outputDir
+          - name: appName
+          - name: resampleMode
+          - name: maxZoom
+          - name: outputFormat
+          - name: beZip
+          - name: threadCount
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --srcFile={{inputs.parameters.srcFile}}
+            --outputDir={{inputs.parameters.outputDir}}
+            --appName={{inputs.parameters.appName}}
+            --resampleMode={{inputs.parameters.resampleMode}}
+            --maxZoom={{inputs.parameters.maxZoom}}
+            --outputFormat={{inputs.parameters.outputFormat}}
+            --beZip={{inputs.parameters.beZip}}
+            --threadCount={{inputs.parameters.threadCount}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'

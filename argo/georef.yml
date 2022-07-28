@@ -1,0 +1,300 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: referencing
+  namespace: default
+spec:
+  entrypoint: referencing
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202103081638
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: beta5
+      - name: input_file
+        value: >-
+          /mnt/cephfs/rsi/data/Test/mlm/georefer/GF2_PMS1_E108.9_N34.2_20181026_L1A0003549596-MSS/data/GF2_PMS1_E108.9_N34.2_20181026_L1A0003549596-MSS1.tif
+      - name: output_file
+        value: >-
+          /mnt/cephfs/rsi/result/1/RSI202103081638/referencing/GF2_PMS1_E108.9_N34.2_20181026_L1A0003549596-MSS1.tif
+      - name: gdal2tiles_path
+        value: /mnt/cephfs/rsi/result/1/RSI202103081638/referencing2tiles/
+      - name: thumbnail_file
+        value: >-
+          /mnt/cephfs/rsi/result/1/RSI202103081638/referencingThumbnail/GF2_PMS1_E108.9_N34.2_20181026_L1A0003549596-MSS1.PNG
+      - name: zoom
+        value: 1-15
+      - name: gcp_obs_path
+        value: rsi/referencing_gcp/03081449/GCP1089342MSS11.txt
+  onExit: ''
+  templates:
+    - name: referencing
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_file
+          - name: output_file
+          - name: gdal2tiles_path
+          - name: thumbnail_file
+          - name: zoom
+          - name: gcp_obs_path
+        artifacts: []
+      dag:
+        tasks:
+          - name: gdal2titles-ajm0
+            template: topo-1615173368482
+            key: topo-1615173368482
+            arguments:
+              parameters:
+                - name: operatorCode
+                  value: gdal2tiles
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: sourceFilePath
+                  value: '{{inputs.parameters.output_file}}'
+                - name: targetDirPath
+                  value: '{{inputs.parameters.gdal2tiles_path}}'
+                - name: zoom
+                  value: '{{inputs.parameters.zoom}}'
+                - name: w
+                  value: google
+                - name: operatorCodeAlias
+                  value: referencing-tiles
+            dependencies:
+              - referencing-l5oq
+          - name: download-file-z1yz
+            template: topo-1615173447730
+            key: topo-1615173447730
+            arguments:
+              parameters:
+                - name: accesskey
+                  value: '{{inputs.parameters.accesskey}}'
+                - name: secretkey
+                  value: '{{inputs.parameters.secretkey}}'
+                - name: endpoint
+                  value: '{{inputs.parameters.inner_endpoint}}'
+                - name: bucket
+                  value: '{{inputs.parameters.input_bucket}}'
+                - name: key
+                  value: '{{inputs.parameters.gcp_obs_path}}'
+                - name: local
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/data/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/referencing/pscinfo.txt
+                - name: store_type
+                  value: '2'
+            dependencies: []
+          - name: referencing-l5oq
+            template: topo-1615199669552
+            key: topo-1615199669552
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: referencing
+                - name: srcRaster
+                  value: '{{inputs.parameters.input_file}}'
+                - name: outRaster
+                  value: '{{inputs.parameters.output_file}}'
+                - name: appName
+                  value: td_geo_referencing
+                - name: transformMethod
+                  value: '1'
+                - name: gcpFile
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/data/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/referencing/pscinfo.txt
+                - name: spatialReference
+                  value: 'EPSG:4326'
+            dependencies:
+              - download-file-z1yz
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1615173368482
+      inputs:
+        parameters:
+          - name: operatorCode
+          - name: execCode
+          - name: tenantId
+          - name: sourceFilePath
+          - name: targetDirPath
+          - name: zoom
+          - name: w
+          - name: operatorCodeAlias
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --execCode={{inputs.parameters.execCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --sourceFilePath={{inputs.parameters.sourceFilePath}}
+            --targetDirPath={{inputs.parameters.targetDirPath}}
+            --zoom={{inputs.parameters.zoom}} --w={{inputs.parameters.w}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1615173447730
+      inputs:
+        parameters:
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: bucket
+          - name: key
+          - name: local
+          - name: store_type
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-download:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            obs --accesskey={{inputs.parameters.accesskey}}
+            --secretkey={{inputs.parameters.secretkey}}
+            --endpoint={{inputs.parameters.endpoint}}
+            --bucket={{inputs.parameters.bucket}}
+            --key={{inputs.parameters.key}}
+            --local={{inputs.parameters.local}}
+            --store_type={{inputs.parameters.store_type}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1615199669552
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: srcRaster
+          - name: outRaster
+          - name: appName
+          - name: transformMethod
+          - name: gcpFile
+          - name: spatialReference
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        args:
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --srcRaster={{inputs.parameters.srcRaster}}
+            --outRaster={{inputs.parameters.outRaster}}
+            --appName={{inputs.parameters.appName}}
+            --transformMethod={{inputs.parameters.transformMethod}}
+            --gcpFile={{inputs.parameters.gcpFile}}
+            --spatialReference={{inputs.parameters.spatialReference}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'

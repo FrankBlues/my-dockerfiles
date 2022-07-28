@@ -1,0 +1,409 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ortho-batch-single-multi-source-cfg
+  namespace: default
+spec:
+  entrypoint: ortho-batch-single-multi-source-cfg
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012111412
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private
+      - name: input_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/DOM3/bundle_copy
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/DOM3/ortho1
+      - name: dem_path
+        value: /mnt/cephfs/rsi/data/Test/mlm/DEM/SX.tif
+      - name: ortho_gsdx
+        value: 0.000045
+      - name: ortho_gsdy
+        value: 0.000045
+      - name: ortho_gsd_cfg
+        value: /mnt/cephfs/rsi/rsi-config/ortho_gsd_config.json
+      - name: ortho_wktHCS
+        value: >-
+          GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS
+          84",6378137,298.2572235630016,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433],AUTHORITY["EPSG","4326"]]
+      - name: clip_by_dem
+        value: 'false'
+      - name: resampling_kernel
+        value: BiLinear
+      - name: create_pyd
+        value: 'true'
+  onExit: ''
+  templates:
+    - name: ortho-batch-single-multi-source-cfg
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: output_path
+          - name: dem_path
+          - name: ortho_gsdx
+          - name: ortho_gsdy
+          - name: ortho_gsd_cfg
+          - name: ortho_wktHCS
+          - name: clip_by_dem
+          - name: resampling_kernel
+          - name: create_pyd
+        artifacts: []
+      dag:
+        tasks:
+          - name: xq-ortho-a5wn
+            template: topo-1640050229747
+            key: topo-1640050229747
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].input_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].ortho_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQOrthoCmd.xml
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: gsd_x
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq '.[{{item}}].gsdx'| sed
+                    's/\"//g'`
+                - name: gsd_y
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq '.[{{item}}].gsdy'| sed
+                    's/\"//g'`
+                - name: wkt_hcs
+                  value: '{{inputs.parameters.ortho_wktHCS}}'
+                - name: resampling_kernel
+                  value: '{{inputs.parameters.resampling_kernel}}'
+                - name: output_8bits
+                  value: 'false'
+                - name: clip_by_dem
+                  value: '{{inputs.parameters.clip_by_dem}}'
+                - name: create_pyd
+                  value: 'true'
+                - name: tasks
+                  value: '4'
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.xq-batch-rule-multi-source-5pt3.outputs.artifacts.items}}
+            dependencies:
+              - xq-batch-rule-multi-source-5pt3
+            withSequence:
+              count: >-
+                {{tasks.xq-batch-rule-multi-source-5pt3.outputs.parameters.count}}
+          - name: xq-batch-rule-multi-source-5pt3
+            template: topo-1641976812237
+            key: topo-1641976812237
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/image_parallel.json
+                - name: suffix
+                  value: .tif
+                - name: gsdx
+                  value: '{{inputs.parameters.ortho_gsdx}}'
+                - name: gsdy
+                  value: '{{inputs.parameters.ortho_gsdy}}'
+                - name: gsd_config
+                  value: '{{inputs.parameters.ortho_gsd_cfg}}'
+            dependencies: []
+          - name: thumbnail-create-a4f2
+            template: topo-1644905255060
+            key: topo-1644905255060
+            arguments:
+              parameters:
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: inputRaster
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].ortho_file'| sed 's/\"//g'`
+                - name: outputFile
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].thumbnail_file_ortho'| sed 's/\"//g'`
+                - name: size
+                  value: '500'
+                - name: operatorCode
+                  value: thumbnail
+                - name: operatorCodeAlias
+                  value: orthoCalibrate-analysis
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.xq-batch-rule-multi-source-5pt3.outputs.artifacts.items}}
+            dependencies:
+              - calculate-statistics-40x1
+            withSequence:
+              count: >-
+                {{tasks.xq-batch-rule-multi-source-5pt3.outputs.parameters.count}}
+          - name: calculate-statistics-40x1
+            template: topo-1657008705657
+            key: topo-1657008705657
+            arguments:
+              parameters:
+                - name: in_raster
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].ortho_file'| sed 's/\"//g'`
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.xq-batch-rule-multi-source-5pt3.outputs.artifacts.items}}
+            dependencies:
+              - xq-ortho-a5wn
+            withSequence:
+              count: >-
+                {{tasks.xq-batch-rule-multi-source-5pt3.outputs.parameters.count}}
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1640050229747
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: dem_file
+          - name: gsd_x
+          - name: gsd_y
+          - name: wkt_hcs
+          - name: resampling_kernel
+          - name: output_8bits
+          - name: clip_by_dem
+          - name: create_pyd
+          - name: tasks
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args: 
+          - >-
+            python3 /opt/rsi/xq_ortho_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --gsd_x={{inputs.parameters.gsd_x}}
+            --gsd_y={{inputs.parameters.gsd_y}}
+            --wkt_hcs={{inputs.parameters.wkt_hcs}}
+            --resampling_kernel={{inputs.parameters.resampling_kernel}}
+            --output_8bits={{inputs.parameters.output_8bits}}
+            --clip_by_dem={{inputs.parameters.clip_by_dem}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --tasks={{inputs.parameters.tasks}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1641976812237
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: suffix
+          - name: gsdx
+          - name: gsdy
+          - name: gsd_config
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/process/xq_batch_rule_multi_source_cfg.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --suffix={{inputs.parameters.suffix}}
+            --gsdx={{inputs.parameters.gsdx}} --gsdy={{inputs.parameters.gsdy}}
+            --gsd_config={{inputs.parameters.gsd_config}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1644905255060
+      inputs:
+        parameters:
+          - name: execCode
+          - name: tenantId
+          - name: inputRaster
+          - name: outputFile
+          - name: size
+          - name: operatorCode
+          - name: operatorCodeAlias
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gdal2tiles:v0.6.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --execCode={{inputs.parameters.execCode}}
+            --tenantId={{inputs.parameters.tenantId}}
+            --inputRaster={{inputs.parameters.inputRaster}}
+            --outputFile={{inputs.parameters.outputFile}}
+            --size={{inputs.parameters.size}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+    - name: topo-1657008705657
+      inputs:
+        parameters:
+          - name: in_raster
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python3 /opt/rsi/calculate_statistics.py
+            --in_raster={{inputs.parameters.in_raster}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi
