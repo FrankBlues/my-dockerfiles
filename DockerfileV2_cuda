@@ -1,0 +1,47 @@
+#FROM nvidia/cuda:11.3.1-devel-centos7
+FROM nvidia/cuda:11.3.1-runtime-centos7
+
+#COPY ./opt.tar /opt/
+#COPY ./miniconda.tar /opt/
+#RUN cd /opt \
+#    && tar -xzf opt.tar \
+#    && tar -xzf miniconda.tar \
+#    && rm -f *.tar
+
+COPY ./tar /opt/
+RUN ln -s /opt/miniconda/etc/profile.d/conda.sh /etc/profile.d/conda.sh \
+    && echo ". /opt/miniconda/etc/profile.d/conda.sh" >> ~/.bashrc \
+    && echo "conda activate base" >> ~/.bashrc
+
+ENV PATH /opt/miniconda/bin:$PATH
+ENV GDAL_DATA /opt/miniconda/share/gdal
+ENV PROJ_LIB /opt/miniconda/share/proj
+
+COPY ./libtbb/* /usr/lib64/
+
+RUN yum install -y epel-release && \
+    yum install -y gtk+-devel gtk2-devel qt.x86_64 libjpeg-turbo libgfortran libmng jq kde-l10n-Chinese && \
+    yum install -y libSM-1.2.2-2.el7.x86_64 --setopt=protected_multilib=false && \
+    yum clean all && \
+    echo "/opt/linux64/Mosaic" >> /etc/ld.so.conf && \
+    echo "/opt/linux64" >> /etc/ld.so.conf && \
+    ldconfig
+
+RUN localedef -c -f UTF-8 -i zh_CN zh_CN.utf8
+
+#RUN mkdir -p /home/XQRS/desktop/release/linux64 && \
+#    cp /opt/linux64/libXQBase.so /home/XQRS/desktop/release/linux64 && \
+#    cp /opt/linux64/libXQDog.so /home/XQRS/desktop/release/linux64
+
+RUN chmod 755 /opt/linux64/*.x && \
+    chmod 755 /opt/linux64/Mosaic/XQMosai* && \
+    ln -sf /opt/linux64/*.x /usr/bin/ && \
+    ln -sf /opt/linux64/Mosaic/XQMosaic /usr/bin/XQMosaic && \
+    ln -sf /opt/linux64/Mosaic/XQMosaicX /usr/bin/XQMosaicX && \
+    ln -sf /opt/linux64/XQDsmRefineCmd.x /usr/bin/XQDsmRefineCmd.x
+
+ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib:/usr/lib:/usr/lib64
+ENV LANG zh_CN.utf8
+
+USER root
+WORKDIR /opt/rsi
