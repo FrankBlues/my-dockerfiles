@@ -1,0 +1,569 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: tie-bundle-rpc-batch
+  namespace: default
+spec:
+  entrypoint: tie-bundle-rpc-batch
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012111412
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private
+      - name: input_path
+        value: >-
+          /mnt/cephfs/rsi/data/mlm/GF2/GF2/GF2_PMS1_E110.0_N34.0_20200727_L1A0004953380
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/mlm/DOM3
+      - name: dem_path
+        value: /mnt/cephfs/rsi/data/mlm/GF2/DEM
+      - name: grid_num_x_tie
+        value: '15'
+      - name: grid_num_y_tie
+        value: '15'
+      - name: block_size_x_tie
+        value: '512'
+      - name: block_size_y_tie
+        value: '512'
+      - name: tie_match_tasks_per_node
+        value: '5'
+      - name: adjustment_model_bundle
+        value: '1'
+      - name: is_del_tie_error_pt_bundle
+        value: 'true'
+      - name: del_tie_pt_thre_bundle
+        value: '"1000,100,50,10,5"'
+      - name: is_del_gcp_error_pt_bundle
+        value: 'false'
+      - name: del_gcp_pt_thre_bundle
+        value: '"1000,100,50,10,5"'
+      - name: base_img_weight_bundle
+        value: '0.1'
+      - name: is_set_gcp_weight_bundle
+        value: 'false'
+      - name: gcp_weight_bundle
+        value: '10.0'
+      - name: image_type
+        value: all
+  onExit: ''
+  templates:
+    - name: tie-bundle-rpc-batch
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: output_path
+          - name: dem_path
+          - name: grid_num_x_tie
+          - name: grid_num_y_tie
+          - name: block_size_x_tie
+          - name: block_size_y_tie
+          - name: tie_match_tasks_per_node
+          - name: adjustment_model_bundle
+          - name: is_del_tie_error_pt_bundle
+          - name: del_tie_pt_thre_bundle
+          - name: is_del_gcp_error_pt_bundle
+          - name: del_gcp_pt_thre_bundle
+          - name: base_img_weight_bundle
+          - name: is_set_gcp_weight_bundle
+          - name: gcp_weight_bundle
+          - name: image_type
+        artifacts: []
+      dag:
+        tasks:
+          - name: xq-match-task-sheet-prepare-f1st
+            template: topo-1639562597740
+            key: topo-1639562597740
+            arguments:
+              parameters:
+                - name: input_files
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq '.[{{item}}].input_dir'|
+                    sed 's/\"//g'`
+                - name: output_dir
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].output_dir'| sed 's/\"//g'`/xqtiematch
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: config_file
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].output_dir'| sed
+                    's/\"//g'`/xqtiematch/XQMatchTaskSheet.xml
+                - name: block_size_x
+                  value: '{{inputs.parameters.block_size_x_tie}}'
+                - name: block_size_y
+                  value: '{{inputs.parameters.block_size_y_tie}}'
+                - name: grid_num_x
+                  value: '{{inputs.parameters.grid_num_x_tie}}'
+                - name: grid_num_y
+                  value: '{{inputs.parameters.grid_num_y_tie}}'
+                - name: single_model_match
+                  value: 'false'
+                - name: grid_filter_size
+                  value: '512'
+                - name: image_type
+                  value: '{{inputs.parameters.image_type}}'
+                - name: ul_lat
+                  value: None
+                - name: ul_long
+                  value: None
+                - name: ur_lat
+                  value: None
+                - name: ur_long
+                  value: None
+                - name: lr_lat
+                  value: None
+                - name: lr_long
+                  value: None
+                - name: ll_lat
+                  value: None
+                - name: ll_long
+                  value: None
+                - name: tasks_per_node
+                  value: '{{inputs.parameters.tie_match_tasks_per_node}}'
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.bundle-img-rpc-ba-rule-2m65.outputs.artifacts.items}}
+            dependencies:
+              - bundle-img-rpc-ba-rule-2m65
+            withSequence:
+              count: '{{tasks.bundle-img-rpc-ba-rule-2m65.outputs.parameters.count}}'
+          - name: xq-match-task-sheet-cmd-run-i7yw
+            template: topo-1639562603172
+            key: topo-1639562603172
+            arguments:
+              parameters:
+                - name: config_file
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].output_dir'| sed
+                    's/\"//g'`/xqtiematch/XQMatchTaskSheet.xml
+                - name: from_model
+                  value: '0'
+                - name: n_models
+                  value: '1'
+                - name: max_models
+                  value: '1'
+                - name: tasks_per_node
+                  value: '{{inputs.parameters.tie_match_tasks_per_node}}'
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.bundle-img-rpc-ba-rule-2m65.outputs.artifacts.items}}
+            dependencies:
+              - xq-match-task-sheet-prepare-f1st
+            withSequence:
+              count: '{{tasks.bundle-img-rpc-ba-rule-2m65.outputs.parameters.count}}'
+          - name: bundle-img-rpc-ba-zskn
+            template: topo-1665988299056
+            key: topo-1665988299056
+            arguments:
+              parameters:
+                - name: input_image_dir
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq '.[{{item}}].input_dir'|
+                    sed 's/\"//g'`
+                - name: input_rpc_dir
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].output_dir'| sed 's/\"//g'`/xqbundle/
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.bundle-img-rpc-ba-rule-2m65.outputs.artifacts.items}}
+            dependencies:
+              - xq-bundle-774u
+            withSequence:
+              count: '{{tasks.bundle-img-rpc-ba-rule-2m65.outputs.parameters.count}}'
+          - name: xq-bundle-774u
+            template: topo-1665992964393
+            key: topo-1665992964393
+            arguments:
+              parameters:
+                - name: input_files
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq '.[{{item}}].input_dir'|
+                    sed 's/\"//g'`
+                - name: output_dir
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].output_dir'| sed 's/\"//g'`/xqbundle/
+                - name: dem_file
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: config_file
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].output_dir'| sed
+                    's/\"//g'`/xqbundle/XQBundle.task
+                - name: is_del_tie_error_pt
+                  value: '{{inputs.parameters.is_del_tie_error_pt_bundle}}'
+                - name: del_tie_pt_thre
+                  value: '{{inputs.parameters.del_tie_pt_thre_bundle}}'
+                - name: is_del_gcp_error_pt
+                  value: '{{inputs.parameters.is_del_gcp_error_pt_bundle}}'
+                - name: del_gcp_thre
+                  value: '{{inputs.parameters.del_gcp_pt_thre_bundle}}'
+                - name: adjustment_model
+                  value: '{{inputs.parameters.adjustment_model_bundle}}'
+                - name: base_img_weight
+                  value: '{{inputs.parameters.base_img_weight_bundle}}'
+                - name: is_set_gcp_weight
+                  value: '{{inputs.parameters.is_set_gcp_weight_bundle}}'
+                - name: gcp_weight
+                  value: '{{inputs.parameters.gcp_weight_bundle}}'
+                - name: tie_file
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].output_dir'| sed 's/\"//g'`/xqtiematch/
+                - name: gcp_file
+                  value: 'NULL'
+                - name: sensor_type
+                  value: '0'
+                - name: error_images
+                  value: None
+                - name: ctrl_images
+                  value: None
+                - name: image_type
+                  value: '{{inputs.parameters.image_type}}'
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.bundle-img-rpc-ba-rule-2m65.outputs.artifacts.items}}
+            dependencies:
+              - xq-match-task-sheet-cmd-run-i7yw
+            withSequence:
+              count: '{{tasks.bundle-img-rpc-ba-rule-2m65.outputs.parameters.count}}'
+          - name: bundle-img-rpc-ba-rule-2m65
+            template: topo-1665999791953
+            key: topo-1665999791953
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/xqks_parallel.json
+            dependencies: []
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1639562597740
+      inputs:
+        parameters:
+          - name: input_files
+          - name: output_dir
+          - name: dem_file
+          - name: config_file
+          - name: block_size_x
+          - name: block_size_y
+          - name: grid_num_x
+          - name: grid_num_y
+          - name: single_model_match
+          - name: grid_filter_size
+          - name: image_type
+          - name: ul_lat
+          - name: ul_long
+          - name: ur_lat
+          - name: ur_long
+          - name: lr_lat
+          - name: lr_long
+          - name: ll_lat
+          - name: ll_long
+          - name: tasks_per_node
+        artifacts:
+          - name: items
+            path: /tmp/xqks_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_match_task_sheet_cmd_v2_prepare.py
+            --input_files={{inputs.parameters.input_files}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --block_size_x={{inputs.parameters.block_size_x}}
+            --block_size_y={{inputs.parameters.block_size_y}}
+            --grid_num_x={{inputs.parameters.grid_num_x}}
+            --grid_num_y={{inputs.parameters.grid_num_y}}
+            --single_model_match={{inputs.parameters.single_model_match}}
+            --grid_filter_size={{inputs.parameters.grid_filter_size}}
+            --image_type={{inputs.parameters.image_type}}
+            --ul_lat={{inputs.parameters.ul_lat}}
+            --ul_long={{inputs.parameters.ul_long}}
+            --ur_lat={{inputs.parameters.ur_lat}}
+            --ur_long={{inputs.parameters.ur_long}}
+            --lr_lat={{inputs.parameters.lr_lat}}
+            --lr_long={{inputs.parameters.lr_long}}
+            --ll_lat={{inputs.parameters.ll_lat}}
+            --ll_long={{inputs.parameters.ll_long}}
+            --tasks_per_node={{inputs.parameters.tasks_per_node}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1639562603172
+      inputs:
+        parameters:
+          - name: config_file
+          - name: from_model
+          - name: n_models
+          - name: max_models
+          - name: tasks_per_node
+        artifacts:
+          - name: items
+            path: /tmp/xqks_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+            nvidia.com/gpu: 1
+          requests:
+            memory: 16Gi
+            cpu: 8
+            nvidia.com/gpu: 1
+        args:
+          - >-
+            python /opt/rsi/xq_match_task_sheet_cmd_v2_run.py
+            --config_file={{inputs.parameters.config_file}}
+            --from_model={{inputs.parameters.from_model}}
+            --n_models={{inputs.parameters.n_models}}
+            --max_models={{inputs.parameters.max_models}}
+            --tasks_per_node={{inputs.parameters.tasks_per_node}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1665988299056
+      inputs:
+        parameters:
+          - name: input_image_dir
+          - name: input_rpc_dir
+        artifacts:
+          - name: items
+            path: /tmp/xqks_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 1Gi
+            cpu: 1
+          requests:
+            memory: 1Gi
+            cpu: 1
+        args:
+          - >-
+            python /opt/rsi/process/bundle_img_rpc_ba.py
+            --input_image_dir={{inputs.parameters.input_image_dir}}
+            --input_rpc_dir={{inputs.parameters.input_rpc_dir}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1665992964393
+      inputs:
+        parameters:
+          - name: input_files
+          - name: output_dir
+          - name: dem_file
+          - name: config_file
+          - name: is_del_tie_error_pt
+          - name: del_tie_pt_thre
+          - name: is_del_gcp_error_pt
+          - name: del_gcp_thre
+          - name: adjustment_model
+          - name: base_img_weight
+          - name: is_set_gcp_weight
+          - name: gcp_weight
+          - name: tie_file
+          - name: gcp_file
+          - name: sensor_type
+          - name: error_images
+          - name: ctrl_images
+          - name: image_type
+        artifacts:
+          - name: items
+            path: /tmp/xqks_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 8
+          requests:
+            memory: 8Gi
+            cpu: 8
+        args:
+          - >-
+            python3 /opt/rsi/xq_bundle_cmd.py
+            --input_files={{inputs.parameters.input_files}}
+            --output_dir={{inputs.parameters.output_dir}}
+            --dem_file={{inputs.parameters.dem_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --is_del_tie_error_pt={{inputs.parameters.is_del_tie_error_pt}}
+            --del_tie_pt_thre={{inputs.parameters.del_tie_pt_thre}}
+            --is_del_gcp_error_pt={{inputs.parameters.is_del_gcp_error_pt}}
+            --del_gcp_thre={{inputs.parameters.del_gcp_thre}}
+            --adjustment_model={{inputs.parameters.adjustment_model}}
+            --base_img_weight={{inputs.parameters.base_img_weight}}
+            --is_set_gcp_weight={{inputs.parameters.is_set_gcp_weight}}
+            --gcp_weight={{inputs.parameters.gcp_weight}}
+            --tie_file={{inputs.parameters.tie_file}}
+            --gcp_file={{inputs.parameters.gcp_file}}
+            --sensor_type={{inputs.parameters.sensor_type}}
+            --error_images={{inputs.parameters.error_images}}
+            --ctrl_images={{inputs.parameters.ctrl_images}}
+            --image_type={{inputs.parameters.image_type}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1665999791953
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/xqks_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python /opt/rsi/process/xq_image_dir_rule.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi

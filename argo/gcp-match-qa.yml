@@ -1,0 +1,409 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: gcp-match-qa
+  namespace: default
+spec:
+  entrypoint: gcp-match-qa
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI20220615
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private2
+      - name: input_path
+        value: /mnt/cephfs/rsi/data/mlm/GF2/GF2
+      - name: dem_path
+        value: /mnt/cephfs/rsi/data/mlm/GF2/DEM
+      - name: dom_path
+        value: /mnt/cephfs/rsi/data/mlm/GF2/DOM
+      - name: blk_size
+        value: '"512 512"'
+      - name: search_range
+        value: '"0 0"'
+      - name: match_method
+        value: '0'
+      - name: n_blocks_gcp
+        value: '"15 15"'
+      - name: band_index
+        value: '"0 3"'
+      - name: tick_point
+        value: 'false'
+      - name: export_geo_dsm
+        value: 'true'
+      - name: imp_warp_mode
+        value: '4'
+  onExit: ''
+  templates:
+    - name: gcp-match-qa
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: dem_path
+          - name: dom_path
+          - name: blk_size
+          - name: search_range
+          - name: match_method
+          - name: n_blocks_gcp
+          - name: band_index
+          - name: tick_point
+          - name: export_geo_dsm
+          - name: imp_warp_mode
+        artifacts: []
+      dag:
+        tasks:
+          - name: xq-gcpmatch-rule-sl9s
+            template: topo-1640054830913
+            key: topo-1640054830913
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/gcp-match
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/xqks_parallel.json
+                - name: image_type
+                  value: all
+            dependencies: []
+          - name: xq-intersect-copy1-w9fu
+            template: topo-1649815428332
+            key: topo-1649815428332
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].input_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/xqks_parallel.json | jq
+                    '.[{{item}}].intersect_txt'| sed 's/\"//g'`
+                - name: input_shp_dir
+                  value: '{{inputs.parameters.dom_path}}'
+                - name: config_file
+                  value: XQIntersectCmd.xml
+                - name: exact_intersection
+                  value: 'true'
+                - name: is_image_dir
+                  value: 'true'
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-gcpmatch-rule-sl9s.outputs.artifacts.items}}'
+            dependencies:
+              - xq-gcpmatch-rule-sl9s
+            withSequence:
+              count: '{{tasks.xq-gcpmatch-rule-sl9s.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: parse-intersected-gcp-ucro
+            template: topo-1649815436609
+            key: topo-1649815436609
+            arguments:
+              parameters:
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/intersected_gcp.json
+                - name: image_type
+                  value: all
+                - name: output_dir
+                  value: >-
+                    {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/gcp-match
+            dependencies:
+              - xq-intersect-copy1-w9fu
+          - name: xq-gcp-match-v4-wwte
+            template: topo-1666158948208
+            key: topo-1666158948208
+            arguments:
+              parameters:
+                - name: config_file
+                  value: GcpMatch.task
+                - name: tag
+                  value: '" XQIMAGE MATCH V1"'
+                - name: block_size
+                  value: '{{inputs.parameters.blk_size}}'
+                - name: n_blocks
+                  value: '{{inputs.parameters.n_blocks_gcp}}'
+                - name: search_range
+                  value: '{{inputs.parameters.search_range}}'
+                - name: match_method
+                  value: '{{inputs.parameters.match_method}}'
+                - name: band_index
+                  value: '{{inputs.parameters.band_index}}'
+                - name: confidence
+                  value: '0.00'
+                - name: generate_imp
+                  value: 'false'
+                - name: wallis_filter
+                  value: 'true'
+                - name: tick_point
+                  value: 'false'
+                - name: imp_warp_mode
+                  value: '{{inputs.parameters.imp_warp_mode}}'
+                - name: input_file
+                  value: >-
+                    `cat /tmp/intersected_gcp.json | jq
+                    '.[{{item}}].origin_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/intersected_gcp.json | jq
+                    '.[{{item}}].gcp_output_file'| sed 's/\"//g'`
+                - name: dem_path
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: reference_images
+                  value: >-
+                    `cat /tmp/intersected_gcp.json | jq
+                    '.[{{item}}].ref_file'| sed 's/\"//g'`
+                - name: export_geo_dsm
+                  value: 'true'
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.parse-intersected-gcp-ucro.outputs.artifacts.items}}
+            dependencies:
+              - parse-intersected-gcp-ucro
+            withSequence:
+              count: '{{tasks.parse-intersected-gcp-ucro.outputs.parameters.count}}'
+            continueOn:
+              error: true
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1640054830913
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: image_type
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/xqks_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python /opt/rsi/process/xq_gcpmatch_rule.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --image_type={{inputs.parameters.image_type}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1649815428332
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: input_shp_dir
+          - name: config_file
+          - name: exact_intersection
+          - name: is_image_dir
+        artifacts:
+          - name: items
+            path: /tmp/xqks_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python3 /opt/rsi/xq_intersect_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --input_shp_dir={{inputs.parameters.input_shp_dir}}
+            --config_file={{inputs.parameters.config_file}}
+            --exact_intersection={{inputs.parameters.exact_intersection}}
+            --is_image_dir={{inputs.parameters.is_image_dir}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1649815436609
+      inputs:
+        parameters:
+          - name: input_dir
+          - name: output_file
+          - name: image_type
+          - name: output_dir
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/intersected_gcp.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python /opt/rsi/process/parse_intersected_gcp.py
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --image_type={{inputs.parameters.image_type}}
+            --output_dir={{inputs.parameters.output_dir}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1666158948208
+      inputs:
+        parameters:
+          - name: config_file
+          - name: tag
+          - name: block_size
+          - name: n_blocks
+          - name: search_range
+          - name: match_method
+          - name: band_index
+          - name: confidence
+          - name: generate_imp
+          - name: wallis_filter
+          - name: tick_point
+          - name: imp_warp_mode
+          - name: input_file
+          - name: output_file
+          - name: dem_path
+          - name: reference_images
+          - name: export_geo_dsm
+        artifacts:
+          - name: items
+            path: /tmp/intersected_gcp.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 2Gi
+            cpu: 2
+          requests:
+            memory: 2Gi
+            cpu: 2
+        args:
+          - >-
+            python3 /opt/rsi/xq_gcp_match_cmd2_v4.py
+            --config_file={{inputs.parameters.config_file}}
+            --tag={{inputs.parameters.tag}}
+            --block_size={{inputs.parameters.block_size}}
+            --n_blocks={{inputs.parameters.n_blocks}}
+            --search_range={{inputs.parameters.search_range}}
+            --match_method={{inputs.parameters.match_method}}
+            --band_index={{inputs.parameters.band_index}}
+            --confidence={{inputs.parameters.confidence}}
+            --generate_imp={{inputs.parameters.generate_imp}}
+            --wallis_filter={{inputs.parameters.wallis_filter}}
+            --tick_point={{inputs.parameters.tick_point}}
+            --imp_warp_mode={{inputs.parameters.imp_warp_mode}}
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --dem_path={{inputs.parameters.dem_path}}
+            --reference_images={{inputs.parameters.reference_images}}
+            --export_geo_dsm={{inputs.parameters.export_geo_dsm}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'

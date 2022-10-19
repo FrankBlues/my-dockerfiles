@@ -1,0 +1,309 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: gcp-self-match
+  namespace: default
+spec:
+  entrypoint: gcp-self-match
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs/rsi
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI20220615
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-private-beta5
+      - name: output_bucket
+        value: rsi-private-beta5
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: '192.168.0.41:7480'
+      - name: inner_endpoint
+        value: '192.168.0.41:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: private2
+      - name: input_path
+        value: /mnt/cephfs/rsi/data/mlm/GF2/GF2
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/mlm/DOM
+      - name: dem_path
+        value: /mnt/cephfs/rsi/data/mlm/GF2/DEM
+      - name: blk_size
+        value: '"512 512"'
+      - name: search_range
+        value: '"0 0"'
+      - name: match_method
+        value: '0'
+      - name: n_blocks_gcp
+        value: '"15 15"'
+      - name: band_index
+        value: '"0 0"'
+  onExit: ''
+  templates:
+    - name: gcp-self-match
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: output_path
+          - name: dem_path
+          - name: blk_size
+          - name: search_range
+          - name: match_method
+          - name: n_blocks_gcp
+          - name: band_index
+        artifacts: []
+      dag:
+        tasks:
+          - name: xq-gcp-match-cevj
+            template: topo-1640055342254
+            key: topo-1640055342254
+            arguments:
+              parameters:
+                - name: config_file
+                  value: GcpMatch.task
+                - name: tag
+                  value: '" XQIMAGE MATCH V1"'
+                - name: block_size
+                  value: '{{inputs.parameters.blk_size}}'
+                - name: n_blocks
+                  value: '{{inputs.parameters.n_blocks_gcp}}'
+                - name: search_range
+                  value: '{{inputs.parameters.search_range}}'
+                - name: match_method
+                  value: '{{inputs.parameters.match_method}}'
+                - name: band_index
+                  value: '{{inputs.parameters.band_index}}'
+                - name: confidence
+                  value: '0.00'
+                - name: generate_imp
+                  value: 'true'
+                - name: wallis_filter
+                  value: 'true'
+                - name: imp_warp_mode
+                  value: '4'
+                - name: input_file
+                  value: >-
+                    `cat /tmp/self_match_parallel.json | jq
+                    '.[{{item}}].input_mss_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/self_match_parallel.json | jq
+                    '.[{{item}}].output_mss_file'| sed 's/\"//g'`
+                - name: dem_path
+                  value: '{{inputs.parameters.dem_path}}'
+                - name: reference_images
+                  value: >-
+                    `cat /tmp/self_match_parallel.json | jq
+                    '.[{{item}}].input_pan_file'| sed 's/\"//g'`
+                - name: is_gf7
+                  value: 'false'
+              artifacts:
+                - name: items
+                  from: >-
+                    {{tasks.xq-gcp-self-match-rule-0ovm.outputs.artifacts.items}}
+            dependencies:
+              - xq-gcp-self-match-rule-0ovm
+            withSequence:
+              count: '{{tasks.xq-gcp-self-match-rule-0ovm.outputs.parameters.count}}'
+            continueOn:
+              error: true
+          - name: xq-gcp-self-match-rule-0ovm
+            template: topo-1666075133545
+            key: topo-1666075133545
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/self_match_parallel.json
+            dependencies: []
+          - name: bundle-img-rpc-ba-3bjr
+            template: topo-1666076036005
+            key: topo-1666076036005
+            arguments:
+              parameters:
+                - name: input_image_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: input_rpc_dir
+                  value: '{{inputs.parameters.output_path}}/xqgcpmatch'
+                - name: image_type
+                  value: mss
+            dependencies:
+              - xq-gcp-match-cevj
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1640055342254
+      inputs:
+        parameters:
+          - name: config_file
+          - name: tag
+          - name: block_size
+          - name: n_blocks
+          - name: search_range
+          - name: match_method
+          - name: band_index
+          - name: confidence
+          - name: generate_imp
+          - name: wallis_filter
+          - name: imp_warp_mode
+          - name: input_file
+          - name: output_file
+          - name: dem_path
+          - name: reference_images
+          - name: is_gf7
+        artifacts:
+          - name: items
+            path: /tmp/self_match_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 16Gi
+            cpu: 8
+          requests:
+            memory: 16Gi
+            cpu: 8
+        args:
+          - >-
+            python3 /opt/rsi/xq_gcp_match_cmd2_v3.py
+            --config_file={{inputs.parameters.config_file}}
+            --tag={{inputs.parameters.tag}}
+            --block_size={{inputs.parameters.block_size}}
+            --n_blocks={{inputs.parameters.n_blocks}}
+            --search_range={{inputs.parameters.search_range}}
+            --match_method={{inputs.parameters.match_method}}
+            --band_index={{inputs.parameters.band_index}}
+            --confidence={{inputs.parameters.confidence}}
+            --generate_imp={{inputs.parameters.generate_imp}}
+            --wallis_filter={{inputs.parameters.wallis_filter}}
+            --imp_warp_mode={{inputs.parameters.imp_warp_mode}}
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --dem_path={{inputs.parameters.dem_path}}
+            --reference_images={{inputs.parameters.reference_images}}
+            --is_gf7={{inputs.parameters.is_gf7}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1666075133545
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/self_match_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python /opt/rsi/process/xq_gcpmatch_self_match_rule.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1666076036005
+      inputs:
+        parameters:
+          - name: input_image_dir
+          - name: input_rpc_dir
+          - name: image_type
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args:
+          - >-
+            python /opt/rsi/process/bundle_img_rpc_ba.py
+            --input_image_dir={{inputs.parameters.input_image_dir}}
+            --input_rpc_dir={{inputs.parameters.input_rpc_dir}}
+            --image_type={{inputs.parameters.image_type}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
