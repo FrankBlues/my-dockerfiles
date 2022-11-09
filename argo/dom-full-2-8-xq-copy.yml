@@ -8,7 +8,7 @@ spec:
   arguments:
     parameters:
       - name: ceph_path
-        value: /mnt/cephfs/rsi
+        value: /mnt/cephfs
       - name: share_path
         value: /mnt/cifs
       - name: exec_code
@@ -78,6 +78,8 @@ spec:
       - name: is_set_gcp_weight_bundle
         value: 'true'
       - name: gcp_weight_bundle
+        value: '10.0'
+      - name: wait_time_bundle
         value: '10.0'
       - name: ortho_mss_gsdx
         value: '0.0001'
@@ -149,6 +151,7 @@ spec:
           - name: base_img_weight_bundle
           - name: is_set_gcp_weight_bundle
           - name: gcp_weight_bundle
+          - name: wait_time_bundle
           - name: ortho_mss_gsdx
           - name: ortho_mss_gsdy
           - name: ortho_pan_gsdx
@@ -1559,6 +1562,8 @@ spec:
                     {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqbundle_m/
                 - name: image_type
                   value: mss
+                - name: wait_time
+                  value: '{{inputs.parameters.wait_time_bundle}}'
             dependencies:
               - xq-bundle-to2u
               - xq-bundle-745l
@@ -1574,6 +1579,8 @@ spec:
                     {{inputs.parameters.ceph_path}}/result/{{inputs.parameters.tenant_id}}/{{inputs.parameters.exec_code}}/xqbundle_p/
                 - name: image_type
                   value: pan
+                - name: wait_time
+                  value: '{{inputs.parameters.wait_time_bundle}}'
             dependencies:
               - xq-bundle-dm0q
               - xq-bundle-f01m
@@ -3491,6 +3498,7 @@ spec:
           - name: input_image_dir
           - name: input_rpc_dir
           - name: image_type
+          - name: wait_time
       container:
         image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
         command:
@@ -3506,10 +3514,11 @@ spec:
             cpu: 4
         args:
           - >-
-            python /opt/rsi/process/bundle_img_rpc_ba.py
+            python /opt/rsi/process/bundle_img_rpc_ba_v2.py
             --input_image_dir={{inputs.parameters.input_image_dir}}
             --input_rpc_dir={{inputs.parameters.input_rpc_dir}}
             --image_type={{inputs.parameters.image_type}}
+            --wait_time={{inputs.parameters.wait_time}}
         volumeMounts:
           - name: workdir
             mountPath: '{{workflow.parameters.ceph_path}}'
@@ -3521,6 +3530,7 @@ spec:
           - name: input_image_dir
           - name: input_rpc_dir
           - name: image_type
+          - name: wait_time
       container:
         image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
         command:
@@ -3536,10 +3546,11 @@ spec:
             cpu: 4
         args:
           - >-
-            python /opt/rsi/process/bundle_img_rpc_ba.py
+            python /opt/rsi/process/bundle_img_rpc_ba_v2.py
             --input_image_dir={{inputs.parameters.input_image_dir}}
             --input_rpc_dir={{inputs.parameters.input_rpc_dir}}
             --image_type={{inputs.parameters.image_type}}
+            --wait_time={{inputs.parameters.wait_time}}
         volumeMounts:
           - name: workdir
             mountPath: '{{workflow.parameters.ceph_path}}'
