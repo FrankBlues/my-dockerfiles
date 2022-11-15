@@ -12,7 +12,7 @@ spec:
       - name: share_path
         value: /mnt/cifs
       - name: exec_code
-        value: RSI20220615
+        value: RSI20221111
       - name: tenant_id
         value: 1
       - name: input_bucket
@@ -80,7 +80,7 @@ spec:
       - name: gcp_weight_bundle
         value: '10.0'
       - name: wait_time_bundle
-        value: '10.0'
+        value: '10'
       - name: ortho_mss_gsdx
         value: '0.0001'
       - name: ortho_mss_gsdy
@@ -482,7 +482,8 @@ spec:
                 - name: image_type
                   value: mss
             when: '{{inputs.parameters.do_gcpmatch}}==true'
-            dependencies: []
+            dependencies:
+              - remove-ba-files-jv94
           - name: xq-gcp-match-cevj
             template: topo-1640055342254
             key: topo-1640055342254
@@ -606,7 +607,8 @@ spec:
                 - name: image_type
                   value: pan
             when: '{{inputs.parameters.do_gcpmatch}}==true'
-            dependencies: []
+            dependencies:
+              - remove-ba-files-jv94
           - name: xq-ortho-45ch
             template: topo-1640065783905
             key: topo-1640065783905
@@ -1584,6 +1586,24 @@ spec:
             dependencies:
               - xq-bundle-dm0q
               - xq-bundle-f01m
+          - name: remove-ba-files-jv94
+            template: topo-1668158635125
+            key: topo-1668158635125
+            arguments:
+              parameters:
+                - name: input_path
+                  value: '{{inputs.parameters.input_path}}'
+            dependencies: []
+          - name: remove-ba-files-kc8p
+            template: topo-1668158692093
+            key: topo-1668158692093
+            arguments:
+              parameters:
+                - name: input_path
+                  value: '{{inputs.parameters.input_path}}'
+            dependencies:
+              - xq-ortho-45ch
+              - xq-ortho-0y8m
       outputs:
         parameters: []
         artifacts: []
@@ -1614,7 +1634,7 @@ spec:
             valueFrom:
               path: /tmp/count
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -1665,7 +1685,7 @@ spec:
           - name: ctrl_images
           - name: image_type
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -1725,7 +1745,7 @@ spec:
           - name: ctrl_images
           - name: image_type
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -1778,7 +1798,7 @@ spec:
           - name: items
             path: /tmp/dom_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -1838,7 +1858,7 @@ spec:
             valueFrom:
               path: /tmp/batches.txt
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -1887,7 +1907,7 @@ spec:
           - name: max_models
           - name: tasks_per_node
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -1946,7 +1966,7 @@ spec:
             valueFrom:
               path: /tmp/batches.txt
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -1995,7 +2015,7 @@ spec:
           - name: max_models
           - name: tasks_per_node
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2038,7 +2058,7 @@ spec:
             valueFrom:
               path: /tmp/count
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -2085,7 +2105,7 @@ spec:
           - name: items
             path: /tmp/intersected_gcp.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2144,7 +2164,7 @@ spec:
           - name: items
             path: /tmp/intersected_gcp.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2196,7 +2216,7 @@ spec:
             valueFrom:
               path: /tmp/count
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -2239,7 +2259,7 @@ spec:
           - name: items
             path: /tmp/dom_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2290,7 +2310,7 @@ spec:
           - name: items
             path: /tmp/dom_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2341,7 +2361,7 @@ spec:
           - name: items
             path: /tmp/dom_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2393,7 +2413,7 @@ spec:
           - name: items
             path: /tmp/dom_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2457,7 +2477,7 @@ spec:
           - name: items
             path: /tmp/dom_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2523,7 +2543,7 @@ spec:
           - name: items
             path: /tmp/dom_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2569,7 +2589,7 @@ spec:
           - name: sensor_type
           - name: image_type
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2607,7 +2627,7 @@ spec:
           - name: sensor_type
           - name: image_type
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2650,7 +2670,7 @@ spec:
             valueFrom:
               path: /tmp/count
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -2686,7 +2706,7 @@ spec:
           - name: items
             path: /tmp/image_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2727,7 +2747,7 @@ spec:
             valueFrom:
               path: /tmp/count
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -2763,7 +2783,7 @@ spec:
           - name: items
             path: /tmp/image_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2804,7 +2824,7 @@ spec:
             valueFrom:
               path: /tmp/count
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -2844,7 +2864,7 @@ spec:
             valueFrom:
               path: /tmp/count
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -2890,7 +2910,7 @@ spec:
           - name: ctrl_images
           - name: image_type
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -2950,7 +2970,7 @@ spec:
           - name: ctrl_images
           - name: image_type
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -3004,7 +3024,7 @@ spec:
           - name: gen_line_only
           - name: small_overlap
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -3052,7 +3072,7 @@ spec:
           - name: gen_line_only
           - name: small_overlap
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -3097,7 +3117,7 @@ spec:
           - name: items
             path: /tmp/xqks_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -3139,7 +3159,7 @@ spec:
             valueFrom:
               path: /tmp/count
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -3176,7 +3196,7 @@ spec:
           - name: items
             path: /tmp/xqks_parallel.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -3218,7 +3238,7 @@ spec:
             valueFrom:
               path: /tmp/count
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -3253,7 +3273,7 @@ spec:
           - name: is_create_dir
           - name: thread_num
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-gis-business:v0.7.0'
         command:
           - sh
           - '-c'
@@ -3291,7 +3311,7 @@ spec:
           - name: is_create_dir
           - name: thread_num
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-gis-business:v0.7.0'
         command:
           - sh
           - '-c'
@@ -3339,7 +3359,7 @@ spec:
           - name: items
             path: /tmp/intersected_shps.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -3394,7 +3414,7 @@ spec:
           - name: items
             path: /tmp/intersected_shps.json
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -3436,7 +3456,7 @@ spec:
           - name: output_file
           - name: create_pyd
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -3468,7 +3488,7 @@ spec:
           - name: output_file
           - name: create_pyd
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        image: '192.168.0.31:30002/rsi_group/rsi-xq:v0.12.0'
         command:
           - sh
           - '-c'
@@ -3500,7 +3520,7 @@ spec:
           - name: image_type
           - name: wait_time
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -3532,7 +3552,7 @@ spec:
           - name: image_type
           - name: wait_time
       container:
-        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
         command:
           - sh
           - '-c'
@@ -3551,6 +3571,58 @@ spec:
             --input_rpc_dir={{inputs.parameters.input_rpc_dir}}
             --image_type={{inputs.parameters.image_type}}
             --wait_time={{inputs.parameters.wait_time}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1668158635125
+      inputs:
+        parameters:
+          - name: input_path
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python /opt/rsi/process/remove_ba_files.py
+            --input_path={{inputs.parameters.input_path}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+    - name: topo-1668158692093
+      inputs:
+        parameters:
+          - name: input_path
+      container:
+        image: '192.168.0.31:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python /opt/rsi/process/remove_ba_files.py
+            --input_path={{inputs.parameters.input_path}}
         volumeMounts:
           - name: workdir
             mountPath: '{{workflow.parameters.ceph_path}}'
