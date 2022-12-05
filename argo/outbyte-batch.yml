@@ -1,0 +1,502 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: outbyte-batch
+  namespace: default
+spec:
+  entrypoint: outbyte-batch
+  arguments:
+    parameters:
+      - name: ceph_path
+        value: /mnt/cephfs
+      - name: share_path
+        value: /mnt/cifs
+      - name: exec_code
+        value: RSI202012111412
+      - name: tenant_id
+        value: 1
+      - name: input_bucket
+        value: rsi-operator-dev113
+      - name: output_bucket
+        value: rsi-operator-dev113
+      - name: accesskey
+        value: HBE4ZPQA3OLNNSMUNWWC
+      - name: secretkey
+        value: NNdgyDR3LbdpnmXe8APcHlnkTnbFOND2bs9lCmyU
+      - name: endpoint
+        value: 'oss-dev1.e-tudou.com:7480'
+      - name: inner_endpoint
+        value: 'oss-dev1.e-tudou.com:7480'
+      - name: protocol
+        value: http
+      - name: inner_protocol
+        value: http
+      - name: store_type
+        value: 2
+      - name: env
+        value: dev1
+      - name: input_path
+        value: /mnt/cephfs/rsi/data/mlm/DOM3/fusion
+      - name: output_path
+        value: /mnt/cephfs/rsi/data/mlm/DOM3
+      - name: max_cut_coef
+        value: '0.25'
+      - name: min_cut_coef
+        value: '0.25'
+      - name: onlyRGB
+        value: 'false'
+      - name: adjust_band
+        value: 'false'
+      - name: green_enhance
+        value: 'false'
+      - name: green_enhance_coef
+        value: '0.1'
+      - name: exposure_suppress
+        value: 'false'
+      - name: adaptive_stretch
+        value: 'false'
+      - name: create_pyd
+        value: 'true'
+      - name: output_format
+        value: None
+  onExit: ''
+  templates:
+    - name: outbyte-batch
+      parallelism: 150
+      inputs:
+        parameters:
+          - name: ceph_path
+          - name: share_path
+          - name: exec_code
+          - name: tenant_id
+          - name: input_bucket
+          - name: output_bucket
+          - name: accesskey
+          - name: secretkey
+          - name: endpoint
+          - name: inner_endpoint
+          - name: protocol
+          - name: inner_protocol
+          - name: store_type
+          - name: env
+          - name: input_path
+          - name: output_path
+          - name: max_cut_coef
+          - name: min_cut_coef
+          - name: onlyRGB
+          - name: adjust_band
+          - name: green_enhance
+          - name: green_enhance_coef
+          - name: exposure_suppress
+          - name: adaptive_stretch
+          - name: create_pyd
+          - name: output_format
+        artifacts: []
+      dag:
+        tasks:
+          - name: xq-batch-rule-8235
+            template: topo-1634981028628
+            key: topo-1634981028628
+            arguments:
+              parameters:
+                - name: result_dir
+                  value: '{{inputs.parameters.output_path}}'
+                - name: input_dir
+                  value: '{{inputs.parameters.input_path}}'
+                - name: output_file
+                  value: /tmp/image_parallel.json
+                - name: suffix
+                  value: '{{inputs.parameters.output_format}}'
+            dependencies: []
+          - name: xq-image-outbyte-j4jt
+            template: topo-1641364273553
+            key: topo-1641364273553
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].input_file'| sed 's/\"//g'`
+                - name: output_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].outbyte_file'| sed 's/\"//g'`
+                - name: config_file
+                  value: XQImageOutByteCmd.xml
+                - name: min_cut_coef
+                  value: '{{inputs.parameters.min_cut_coef}}'
+                - name: max_cut_coef
+                  value: '{{inputs.parameters.max_cut_coef}}'
+                - name: create_pyd
+                  value: 'false'
+                - name: green_enhance
+                  value: '{{inputs.parameters.green_enhance}}'
+                - name: green_enhance_coef
+                  value: '{{inputs.parameters.green_enhance_coef}}'
+                - name: only_rgb
+                  value: '{{inputs.parameters.onlyRGB}}'
+                - name: adjust_band
+                  value: '{{inputs.parameters.adjust_band}}'
+                - name: exposure_suppress
+                  value: '{{inputs.parameters.exposure_suppress}}'
+                - name: adaptive_stretch
+                  value: '{{inputs.parameters.adaptive_stretch}}'
+                - name: tasks
+                  value: '4'
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-8235.outputs.artifacts.items}}'
+            dependencies:
+              - xq-batch-rule-8235
+            withSequence:
+              count: '{{tasks.xq-batch-rule-8235.outputs.parameters.count}}'
+          - name: thumbnail-bafi
+            template: topo-1644910448206
+            key: topo-1644910448206
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: tdgisAnalysis
+                - name: inputPath
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].outbyte_file'| sed 's/\"//g'`
+                - name: outputPath
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].thumbnail_outbyte'| sed 's/\"//g'`
+                - name: appName
+                  value: at_raster_thumbnail
+                - name: operatorCodeAlias
+                  value: downgrade-analysis
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-8235.outputs.artifacts.items}}'
+            when: '{{inputs.parameters.create_pyd}}==true'
+            dependencies:
+              - create-pyramid-gdal-cv7w
+            withSequence:
+              count: '{{tasks.xq-batch-rule-8235.outputs.parameters.count}}'
+          - name: create-pyramid-gdal-cv7w
+            template: topo-1665969638098
+            key: topo-1665969638098
+            arguments:
+              parameters:
+                - name: input_file
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].outbyte_file'| sed 's/\"//g'`
+                - name: resample_method
+                  value: NEAREST
+                - name: n_threads
+                  value: ALL_CPUS
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-8235.outputs.artifacts.items}}'
+            when: '{{inputs.parameters.create_pyd}}==true'
+            dependencies:
+              - xq-image-outbyte-j4jt
+            withSequence:
+              count: '{{tasks.xq-batch-rule-8235.outputs.parameters.count}}'
+          - name: thumbnail-htwh
+            template: topo-1666857000817
+            key: topo-1666857000817
+            arguments:
+              parameters:
+                - name: tenantId
+                  value: '{{inputs.parameters.tenant_id}}'
+                - name: execCode
+                  value: '{{inputs.parameters.exec_code}}'
+                - name: operatorCode
+                  value: tdgisAnalysis
+                - name: inputPath
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].outbyte_file'| sed 's/\"//g'`
+                - name: outputPath
+                  value: >-
+                    `cat /tmp/image_parallel.json | jq
+                    '.[{{item}}].thumbnail_outbyte'| sed 's/\"//g'`
+                - name: appName
+                  value: at_raster_thumbnail
+                - name: operatorCodeAlias
+                  value: downgrade-analysis
+              artifacts:
+                - name: items
+                  from: '{{tasks.xq-batch-rule-8235.outputs.artifacts.items}}'
+            when: '{{inputs.parameters.create_pyd}}==false'
+            dependencies:
+              - xq-image-outbyte-j4jt
+            withSequence:
+              count: '{{tasks.xq-batch-rule-8235.outputs.parameters.count}}'
+      outputs:
+        parameters: []
+        artifacts: []
+    - name: delay
+      inputs:
+        parameters:
+          - name: time
+      suspend:
+        duration: '{{inputs.parameters.time}}'
+    - name: topo-1634981028628
+      inputs:
+        parameters:
+          - name: result_dir
+          - name: input_dir
+          - name: output_file
+          - name: suffix
+      outputs:
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+        parameters:
+          - name: count
+            valueFrom:
+              path: /tmp/count
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-parallel:v0304'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: '4'
+          requests:
+            memory: 8Gi
+            cpu: '4'
+        args: 
+          - >-
+            python3 /opt/rsi/process/xq_batch_rule_multi_source.py
+            --result_dir={{inputs.parameters.result_dir}}
+            --input_dir={{inputs.parameters.input_dir}}
+            --output_file={{inputs.parameters.output_file}}
+            --suffix={{inputs.parameters.suffix}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1641364273553
+      inputs:
+        parameters:
+          - name: input_file
+          - name: output_file
+          - name: config_file
+          - name: min_cut_coef
+          - name: max_cut_coef
+          - name: create_pyd
+          - name: green_enhance
+          - name: green_enhance_coef
+          - name: only_rgb
+          - name: adjust_band
+          - name: exposure_suppress
+          - name: adaptive_stretch
+          - name: tasks
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 2
+          requests:
+            memory: 8Gi
+            cpu: 2
+        args: 
+          - >-
+            python3 /opt/rsi/xq_image_outbyte_cmd.py
+            --input_file={{inputs.parameters.input_file}}
+            --output_file={{inputs.parameters.output_file}}
+            --config_file={{inputs.parameters.config_file}}
+            --min_cut_coef={{inputs.parameters.min_cut_coef}}
+            --max_cut_coef={{inputs.parameters.max_cut_coef}}
+            --create_pyd={{inputs.parameters.create_pyd}}
+            --green_enhance={{inputs.parameters.green_enhance}}
+            --green_enhance_coef={{inputs.parameters.green_enhance_coef}}
+            --only_rgb={{inputs.parameters.only_rgb}}
+            --adjust_band={{inputs.parameters.adjust_band}}
+            --exposure_suppress={{inputs.parameters.exposure_suppress}}
+            --adaptive_stretch={{inputs.parameters.adaptive_stretch}}
+            --tasks={{inputs.parameters.tasks}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1644910448206
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputPath
+          - name: outputPath
+          - name: appName
+          - name: operatorCodeAlias
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputPath={{inputs.parameters.inputPath}}
+            --outputPath={{inputs.parameters.outputPath}}
+            --appName={{inputs.parameters.appName}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1665969638098
+      inputs:
+        parameters:
+          - name: input_file
+          - name: resample_method
+          - name: n_threads
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-xq:v0.12.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            python /opt/rsi/create_pyramid_gdal.py
+            --input_file={{inputs.parameters.input_file}}
+            --resample_method={{inputs.parameters.resample_method}}
+            --n_threads={{inputs.parameters.n_threads}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+    - name: topo-1666857000817
+      inputs:
+        parameters:
+          - name: tenantId
+          - name: execCode
+          - name: operatorCode
+          - name: inputPath
+          - name: outputPath
+          - name: appName
+          - name: operatorCodeAlias
+        artifacts:
+          - name: items
+            path: /tmp/image_parallel.json
+      container:
+        image: 'registry.private.cloud:30002/rsi_group/rsi-gis-business:v0.7.0'
+        command:
+          - sh
+          - '-c'
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 8Gi
+            cpu: 4
+          requests:
+            memory: 8Gi
+            cpu: 4
+        args: 
+          - >-
+            java -jar /opt/potato-algo-adapter.jar
+            --tenantId={{inputs.parameters.tenantId}}
+            --execCode={{inputs.parameters.execCode}}
+            --operatorCode={{inputs.parameters.operatorCode}}
+            --inputPath={{inputs.parameters.inputPath}}
+            --outputPath={{inputs.parameters.outputPath}}
+            --appName={{inputs.parameters.appName}}
+            --operatorCodeAlias={{inputs.parameters.operatorCodeAlias}}
+            --spring.config.location={{workflow.parameters.ceph_path}}/rsi/config/application-{{workflow.parameters.env}}.yml
+            --s3.protocol={{workflow.parameters.protocol}}
+            --s3.ak={{workflow.parameters.accesskey}}
+            --s3.sk={{workflow.parameters.secretkey}}
+            --s3.bucket={{workflow.parameters.output_bucket}}
+            --s3.endpoint={{workflow.parameters.endpoint}}
+            --s3.lanEndpoint={{workflow.parameters.inner_endpoint}}
+        volumeMounts:
+          - name: workdir
+            mountPath: '{{workflow.parameters.ceph_path}}'
+          - name: sharedir
+            mountPath: '{{workflow.parameters.share_path}}'
+          - name: uploaddir
+            mountPath: /mnt/cephfs/rsi-private-beta/rsi
+      retryStrategy:
+        retryPolicy: Always
+        limit: '5'
+  hostNetwork: true
+  volumes:
+    - name: workdir
+      hostPath:
+        path: '{{workflow.parameters.ceph_path}}'
+    - name: sharedir
+      hostPath:
+        path: '{{workflow.parameters.share_path}}'
+    - name: uploaddir
+      hostPath:
+        path: /mnt/cephfs/rsi-private-beta/rsi
